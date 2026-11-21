@@ -1,1 +1,217 @@
-{"editions": [], "primerCursor": 0}
+{
+ "editions": [
+  "2026-11-21"
+ ],
+ "primerCursor": 1,
+ "throwbackCursor": 1,
+ "curriculum": [
+  "The transformer revisited: attention as a soft dictionary lookup",
+  "Tokenization and byte-pair encoding",
+  "Positional encodings: from sinusoids to RoPE",
+  "Scaling laws: from Kaplan to Chinchilla",
+  "FlashAttention and IO-aware kernels",
+  "The KV cache and why decoding is memory-bound",
+  "Grouped-query and multi-head latent attention",
+  "Mixture-of-experts routing and load balancing",
+  "Instruction tuning and supervised fine-tuning",
+  "RLHF: reward models and PPO",
+  "Direct Preference Optimization",
+  "GRPO and reinforcement learning from verifiable rewards",
+  "Reasoning models and test-time compute",
+  "LoRA and parameter-efficient fine-tuning",
+  "Quantization: from INT8 to 4-bit and below",
+  "Speculative decoding",
+  "Extending context length and its limits",
+  "State-space models and Mamba",
+  "Hybrid attention and state-space architectures",
+  "Knowledge distillation for large models",
+  "Synthetic data and data curation",
+  "Retrieval-augmented generation",
+  "Tool use and function calling",
+  "Agents: planning loops and scaffolds",
+  "Vision transformers and contrastive pretraining (CLIP)",
+  "Vision-language models",
+  "Diffusion models: score matching and DDPM",
+  "Flow matching and rectified flow",
+  "Diffusion transformers",
+  "Video generation and learned world models",
+  "Vision-language-action models",
+  "Diffusion policies for robot control",
+  "Mechanistic interpretability and circuits",
+  "Sparse autoencoders and learned features",
+  "Evaluation: benchmarks, contamination, and evals",
+  "Optimizers: AdamW, Lion, and Muon",
+  "Parallelism at scale: data, tensor, pipeline, expert",
+  "Constitutional AI and safety training",
+  "Multi-token prediction",
+  "Serving: continuous batching and PagedAttention"
+ ],
+ "throwbacks": [
+  {
+   "topic": "Hopfield networks and associative memory",
+   "era": "1982"
+  },
+  {
+   "topic": "Backpropagation",
+   "era": "1986"
+  },
+  {
+   "topic": "Convolutional networks and LeNet",
+   "era": "1989 to 1998"
+  },
+  {
+   "topic": "Universal approximation",
+   "era": "1989"
+  },
+  {
+   "topic": "Mixture of experts, the original idea",
+   "era": "1991, revived 2017"
+  },
+  {
+   "topic": "Long short-term memory",
+   "era": "1997 to 2000"
+  },
+  {
+   "topic": "Deep belief networks and the 2006 revival",
+   "era": "2006"
+  },
+  {
+   "topic": "Weight initialization: Glorot and He",
+   "era": "2010 to 2015"
+  },
+  {
+   "topic": "AlexNet and the ImageNet moment",
+   "era": "2012"
+  },
+  {
+   "topic": "word2vec and distributed word representations",
+   "era": "2013"
+  },
+  {
+   "topic": "Variational autoencoders",
+   "era": "2013 to 2014"
+  },
+  {
+   "topic": "Deep Q-networks",
+   "era": "2013 to 2015"
+  },
+  {
+   "topic": "Generative adversarial networks",
+   "era": "2014"
+  },
+  {
+   "topic": "Sequence-to-sequence learning",
+   "era": "2014"
+  },
+  {
+   "topic": "Attention for alignment: Bahdanau and Luong",
+   "era": "2014 to 2015"
+  },
+  {
+   "topic": "Adam and adaptive optimizers",
+   "era": "2011 to 2014"
+  },
+  {
+   "topic": "Batch normalization and layer normalization",
+   "era": "2015 to 2016"
+  },
+  {
+   "topic": "Knowledge distillation",
+   "era": "2006 to 2015"
+  },
+  {
+   "topic": "Fully convolutional networks and U-Net",
+   "era": "2015"
+  },
+  {
+   "topic": "Diffusion's first appearance and score matching",
+   "era": "2015 to 2019"
+  },
+  {
+   "topic": "Normalizing flows",
+   "era": "2015 to 2016"
+  },
+  {
+   "topic": "Deterministic policy gradients and DDPG",
+   "era": "2014 to 2015"
+  },
+  {
+   "topic": "End-to-end visuomotor policies",
+   "era": "2015"
+  },
+  {
+   "topic": "Trust regions, GAE, and PPO",
+   "era": "2015 to 2017"
+  },
+  {
+   "topic": "Residual networks",
+   "era": "2015 to 2016"
+  },
+  {
+   "topic": "AlphaGo and AlphaGo Zero",
+   "era": "2016 to 2017"
+  },
+  {
+   "topic": "Graph neural networks and message passing",
+   "era": "2016 to 2017"
+  },
+  {
+   "topic": "Self-attention and cross-attention in the Transformer",
+   "era": "2016 to 2017"
+  },
+  {
+   "topic": "Domain randomization and sim-to-real",
+   "era": "2017"
+  },
+  {
+   "topic": "Pretraining arrives: ELMo, GPT, and BERT",
+   "era": "2018"
+  },
+  {
+   "topic": "Neural ordinary differential equations",
+   "era": "2018"
+  },
+  {
+   "topic": "Protein folding: Anfinsen's hypothesis and the CASP challenge",
+   "era": "1960s to 2020"
+  },
+  {
+   "topic": "AlphaFold 2, RoseTTAFold, and AlphaFold 3",
+   "era": "2020 to 2024"
+  },
+  {
+   "topic": "Computer-checked mathematics: from the four color theorem to Lean",
+   "era": "1976 to 2021"
+  },
+  {
+   "topic": "GPT-3 and in-context learning",
+   "era": "2020"
+  }
+ ],
+ "sections": [
+  {
+   "id": "architectures",
+   "name": "Architectures"
+  },
+  {
+   "id": "training",
+   "name": "Training"
+  },
+  {
+   "id": "theory",
+   "name": "Theory"
+  },
+  {
+   "id": "practice",
+   "name": "In Practice"
+  },
+  {
+   "id": "robotics",
+   "name": "Robotics"
+  },
+  {
+   "id": "discoveries",
+   "name": "Discoveries"
+  }
+ ]
+}
