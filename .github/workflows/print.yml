@@ -13,6 +13,10 @@ on:
         description: "Reprint today's edition even if it exists"
         type: boolean
         default: false
+      only:
+        description: "With force, reprint only these sections (comma-separated, e.g. primer,throwback)"
+        type: string
+        default: ""
 
 permissions:
   contents: write
@@ -36,7 +40,7 @@ jobs:
           python-version: "3.12"
       - run: pip install anthropic
       - name: Report and write today's edition
-        run: python build_edition.py ${{ inputs.force && '--force' || '' }}
+        run: python build_edition.py ${{ inputs.force && '--force' || '' }} ${{ inputs.only && format('--only {0}', inputs.only) || '' }}
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           TIMEZONE: ${{ vars.TIMEZONE }}

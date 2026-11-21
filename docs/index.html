@@ -82,6 +82,10 @@ main{max-width:720px;margin:0 auto;padding:0 16px 80px}
 .r-sub{margin:26px 0 10px;font-family:var(--sans);font-size:13px;font-weight:600;color:var(--accent)}
 .status{margin:6px 0 0;padding:12px 14px;background:var(--primer);font-family:var(--sans);font-size:14px;line-height:1.5;color:var(--ink2)}
 .status strong{color:var(--ink)}
+.recap{margin:26px 0;padding:14px 16px 6px;background:var(--primer)}
+.recap h3{margin:0 0 8px;font-family:var(--sans);font-size:13px;font-weight:600;color:var(--primer-ink)}
+.recap ul{margin:0;padding-left:20px}
+.recap li{margin:0 0 8px;font-size:17px;line-height:1.45}
 .why{margin:26px 0;padding:2px 0 2px 16px;border-left:3px solid var(--accent)}
 .why h3,.terms h3,.sources h3,.deeper h3{margin:0 0 6px;font-family:var(--sans);font-size:13px;font-weight:600;color:var(--ink)}
 .why p{margin:0;font-size:17px;line-height:1.5;font-style:italic}
@@ -210,6 +214,7 @@ function openReader(sid,i,{push=true}={}){
     ${a.background&&a.background.length?`<h3 class="r-sub">The backstory</h3><div class="r-body">${a.background.map(p=>`<p>${esc(p)}</p>`).join("")}</div><h3 class="r-sub">What happened</h3>`:""}
     <div class="r-body">${a.body.map(p=>`<p>${esc(p)}</p>`).join("")}</div>
     ${a.status?`<p class="status"><strong>Verification status.</strong> ${esc(a.status)}${a.checked===false?" This story's second fact-check didn't complete, so treat its details with extra care.":""}</p>`:""}
+    ${a.recap&&a.recap.length?`<aside class="recap"><h3>Remember</h3><ul>${a.recap.map(r=>`<li>${esc(r)}</li>`).join("")}</ul></aside>`:""}
     ${a.why?`<aside class="why"><h3>Why it matters</h3><p>${esc(a.why)}</p></aside>`:""}
     ${a.terms.length?`<section class="terms"><h3>Key terms</h3><dl>${a.terms.map(t=>`<dt>${esc(t.term)}</dt><dd>${esc(t.def)}</dd>`).join("")}</dl></section>`:""}
     ${deep}

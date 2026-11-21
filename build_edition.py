@@ -40,25 +40,25 @@ SECTIONS = [
 ]
 PRIMERS = [
     "The transformer revisited: attention as a soft dictionary lookup", "Tokenization and byte-pair encoding",
-    "Positional encodings: from sinusoids to RoPE", "Scaling laws: from Kaplan to Chinchilla",
-    "FlashAttention and IO-aware kernels", "The KV cache and why decoding is memory-bound",
+    "Positional encodings: from sinusoids to rotary position embeddings (RoPE)", "Scaling laws: from Kaplan to Chinchilla",
+    "FlashAttention and IO-aware kernels", "The key-value cache and why generating text is limited by memory",
     "Grouped-query and multi-head latent attention", "Mixture-of-experts routing and load balancing",
-    "Instruction tuning and supervised fine-tuning", "RLHF: reward models and PPO",
-    "Direct Preference Optimization", "GRPO and reinforcement learning from verifiable rewards",
-    "Reasoning models and test-time compute", "LoRA and parameter-efficient fine-tuning",
-    "Quantization: from INT8 to 4-bit and below", "Speculative decoding",
+    "Instruction tuning and supervised fine-tuning", "Reinforcement learning from human feedback (RLHF): reward models and proximal policy optimization (PPO)",
+    "Direct preference optimization (DPO)", "Group relative policy optimization (GRPO) and reinforcement learning from verifiable rewards",
+    "Reasoning models and test-time compute", "Low-rank adaptation (LoRA) and parameter-efficient fine-tuning",
+    "Quantization: from 8-bit integers to 4-bit numbers and below", "Speculative decoding",
     "Extending context length and its limits", "State-space models and Mamba",
     "Hybrid attention and state-space architectures", "Knowledge distillation for large models",
-    "Synthetic data and data curation", "Retrieval-augmented generation",
+    "Synthetic data and data curation", "Retrieval-augmented generation (RAG)",
     "Tool use and function calling", "Agents: planning loops and scaffolds",
-    "Vision transformers and contrastive pretraining (CLIP)", "Vision-language models",
-    "Diffusion models: score matching and DDPM", "Flow matching and rectified flow",
+    "Vision transformers and contrastive language-image pretraining (CLIP)", "Vision-language models",
+    "Diffusion models: score matching and denoising diffusion probabilistic models (DDPM)", "Flow matching and rectified flow",
     "Diffusion transformers", "Video generation and learned world models",
-    "Vision-language-action models", "Diffusion policies for robot control",
+    "Vision-language-action models (VLAs)", "Diffusion policies for robot control",
     "Mechanistic interpretability and circuits", "Sparse autoencoders and learned features",
     "Evaluation: benchmarks, contamination, and evals", "Optimizers: AdamW, Lion, and Muon",
     "Parallelism at scale: data, tensor, pipeline, expert", "Constitutional AI and safety training",
-    "Multi-token prediction", "Serving: continuous batching and PagedAttention",
+    "Multi-token prediction", "Serving models: continuous batching and paged attention memory",
 ]
 
 # Throwback topics with curated citations. The model may cite only these, so names, venues, and years come
@@ -92,13 +92,13 @@ THROWBACKS = [
         ("Krizhevsky, A., Sutskever, I., & Hinton, G. E. (2012). ImageNet classification with deep convolutional neural networks. NeurIPS 2012.", ""),
         ("Hinton, G. E., et al. (2012). Improving neural networks by preventing co-adaptation of feature detectors. arXiv.", _ax("1207.0580"))],
      "notes": "AlexNet used ReLU activations, dropout in the fully connected layers, and training split across two GPUs. Its ILSVRC-2012 top-5 test error was 15.3%, versus 26.2% for the second-best entry."},
-    {"topic": "word2vec and distributed word representations", "era": "2013", "papers": [
+    {"topic": "word2vec and learned word vectors", "era": "2013", "papers": [
         ("Mikolov, T., Chen, K., Corrado, G., & Dean, J. (2013). Efficient estimation of word representations in vector space. arXiv.", _ax("1301.3781")),
         ("Mikolov, T., et al. (2013). Distributed representations of words and phrases and their compositionality. NeurIPS 2013.", _ax("1310.4546"))]},
     {"topic": "Variational autoencoders", "era": "2013 to 2014", "papers": [
         ("Kingma, D. P., & Welling, M. (2013). Auto-encoding variational Bayes. ICLR 2014.", _ax("1312.6114")),
         ("Rezende, D. J., Mohamed, S., & Wierstra, D. (2014). Stochastic backpropagation and approximate inference in deep generative models. ICML 2014.", _ax("1401.4082"))]},
-    {"topic": "Deep Q-networks", "era": "2013 to 2015", "papers": [
+    {"topic": "Deep Q-networks (DQN): learning action values from pixels", "era": "2013 to 2015", "papers": [
         ("Mnih, V., et al. (2013). Playing Atari with deep reinforcement learning. arXiv.", _ax("1312.5602")),
         ("Mnih, V., et al. (2015). Human-level control through deep reinforcement learning. Nature.", "")]},
     {"topic": "Generative adversarial networks", "era": "2014", "papers": [
@@ -130,12 +130,12 @@ THROWBACKS = [
     {"topic": "Normalizing flows", "era": "2015 to 2016", "papers": [
         ("Rezende, D. J., & Mohamed, S. (2015). Variational inference with normalizing flows. ICML 2015.", _ax("1505.05770")),
         ("Dinh, L., Sohl-Dickstein, J., & Bengio, S. (2016). Density estimation using Real NVP. ICLR 2017.", _ax("1605.08803"))]},
-    {"topic": "Deterministic policy gradients and DDPG", "era": "2014 to 2015", "papers": [
+    {"topic": "Deterministic policy gradients and deep deterministic policy gradient (DDPG)", "era": "2014 to 2015", "papers": [
         ("Silver, D., et al. (2014). Deterministic policy gradient algorithms. ICML 2014.", ""),
         ("Lillicrap, T. P., et al. (2015). Continuous control with deep reinforcement learning. ICLR 2016.", _ax("1509.02971"))]},
     {"topic": "End-to-end visuomotor policies", "era": "2015", "papers": [
         ("Levine, S., Finn, C., Darrell, T., & Abbeel, P. (2015). End-to-end training of deep visuomotor policies. JMLR 2016.", _ax("1504.00702"))]},
-    {"topic": "Trust regions, GAE, and PPO", "era": "2015 to 2017", "papers": [
+    {"topic": "Trust regions, generalized advantage estimation (GAE), and proximal policy optimization (PPO)", "era": "2015 to 2017", "papers": [
         ("Schulman, J., et al. (2015). Trust region policy optimization. ICML 2015.", _ax("1502.05477")),
         ("Schulman, J., et al. (2015). High-dimensional continuous control using generalized advantage estimation. ICLR 2016.", _ax("1506.02438")),
         ("Schulman, J., et al. (2017). Proximal policy optimization algorithms. arXiv.", _ax("1707.06347"))]},
@@ -163,7 +163,7 @@ THROWBACKS = [
         ("Devlin, J., Chang, M.-W., Lee, K., & Toutanova, K. (2018). BERT: Pre-training of deep bidirectional transformers for language understanding. NAACL 2019.", _ax("1810.04805"))]},
     {"topic": "Neural ordinary differential equations", "era": "2018", "papers": [
         ("Chen, R. T. Q., Rubanova, Y., Bettencourt, J., & Duvenaud, D. (2018). Neural ordinary differential equations. NeurIPS 2018.", _ax("1806.07366"))]},
-    {"topic": "Protein folding: Anfinsen's hypothesis and the CASP challenge", "era": "1960s to 2020", "papers": [
+    {"topic": "Protein folding: Anfinsen's hypothesis and the Critical Assessment of protein Structure Prediction (CASP)", "era": "1960s to 2020", "papers": [
         ("Anfinsen, C. B. (1973). Principles that govern the folding of protein chains. Science.", ""),
         ("Senior, A. W., et al. (2020). Improved protein structure prediction using potentials from deep learning. Nature.", "")],
      "notes": "Anfinsen's thermodynamic hypothesis holds that a protein's native structure is determined by its amino-acid sequence. Levinthal (1969) observed that a protein cannot find its fold by random search over conformations, which is known as Levinthal's paradox. CASP, the Critical Assessment of protein Structure Prediction, began in 1994 and is held every two years. The first AlphaFold (Senior et al.) placed first in CASP13 in 2018."},
@@ -187,9 +187,33 @@ READER = ('You write for "The Model Desk", a daily brief for a reader with a com
           'technical depth: architectures, training paradigms, mathematics, and deployment.')
 MATH_RULE = ('Where a formula genuinely clarifies the idea (an objective, an update rule, a complexity bound), '
              'include one in LaTeX, using \\( \\) inline or \\[ \\] for display. Escape every backslash for JSON.')
-SHAPE = ('{"headline":"...","dek":"one-sentence summary","body":["paragraph","paragraph"],'
-         '"why":"one sentence on why this matters for the field","terms":[{"term":"...","def":"under 15 words"}],'
+SHAPE = ('{"headline":"...","dek":"one-sentence summary","body":["paragraph","..."],'
+         '"recap":["sentence to remember","sentence","sentence"],'
+         '"why":"one sentence on why this matters for the field","terms":[{"term":"...","def":"plain definition"}],'
          '"sources":[{"title":"...","url":"https://..."}]}')
+
+TEACHING = ("Teach, don't summarize. The reader learned this material years ago and is rebuilding it step by step. "
+            "Assume comfort with linear algebra, probability, calculus, and basic neural networks, but define this "
+            "topic's vocabulary before using it, and build intuition before formalism.")
+
+# The house style for every piece on The Model Desk. Every prompt and both fact-check passes include it.
+STYLE = """House style. The reader learns by understanding, not by memorizing, and wants reminders throughout:
+- Acronyms: the first time any acronym or abbreviation appears in a piece, write the full name, then the acronym
+  in parentheses, then a short plain explanation, e.g. "mixture of experts (MoE), a layer that sends each token
+  to a few of many smaller networks". After that, prefer the full name or a plain description wherever it reads
+  naturally. Headlines and the dek contain no unexplained acronyms: describe the idea in plain words instead.
+  Model and product names may appear as names, but say in a few words what the model is.
+- Terms: define every technical term the first time it is used, even familiar ones, with a one-line reminder
+  of what it means ("Recall that a key-value cache stores the keys and values of earlier tokens so they aren't
+  recomputed").
+- Equations: after every equation, say in one sentence what it does intuitively, then name every symbol in
+  words, with its shape or units where relevant. Never leave a symbol undefined.
+- Intuition first: an analogy or concrete picture, then the mechanism, then the math. Where a small numeric
+  example fits, include one and make sure the arithmetic is correct.
+- Plain, concrete sentences. One idea per sentence. No jargon-stacking."""
+PRIMER_SHAPE = ('{"headline":"...","dek":"one-sentence summary","body":["paragraph","..."],'
+                '"recap":["sentence to remember","sentence","sentence"],"why":"one sentence on why it matters",'
+                '"terms":[{"term":"...","def":"plain definition"}],"sources":[{"title":"...","url":""}]}')
 
 client = anthropic.Anthropic()
 
@@ -247,13 +271,15 @@ def normalize(a: dict) -> dict:
         "sources": [s for s in (a.get("sources") or []) if isinstance(s, dict) and s.get("title")],
         "background": [str(p) for p in (a.get("background") or [])] if isinstance(a.get("background"), list) else ([str(a["background"])] if a.get("background") else []),
         "status": str(a.get("status") or ""),
+        "recap": [str(r) for r in (a.get("recap") or [])] if isinstance(a.get("recap"), list) else [],
         "deeper": [],
     }
 
 
 SCI_SHAPE = ('{"headline":"...","dek":"one-sentence summary","background":["paragraph","paragraph"],'
-             '"body":["paragraph","paragraph"],"status":"one sentence on verification status",'
-             '"why":"one sentence on why this matters","terms":[{"term":"...","def":"under 15 words"}],'
+             '"body":["paragraph","..."],"status":"one sentence on verification status",'
+             '"recap":["sentence to remember","sentence","sentence"],'
+             '"why":"one sentence on why this matters","terms":[{"term":"...","def":"plain definition"}],'
              '"sources":[{"title":"...","url":"https://..."}]}')
 
 
@@ -272,7 +298,9 @@ Each article has two parts, in this order:
 1. "background": 2 paragraphs of history and context, written before any AI is mentioned. State the problem or
    theorem precisely (formally, with LaTeX where it helps), say who posed it and when, explain why it matters,
    and give the best earlier results with their authors and years.
-2. "body": 2 paragraphs on what the AI system did and how, who reported it and when, and exactly what was shown.
+2. "body": 2 or 3 paragraphs on what the AI system did and how, who reported it and when, and exactly what was
+   shown, with the intuition behind the key idea.
+"recap": exactly 3 short sentences the reader should remember.
 "status": one sentence on verification. Say precisely whether the result is peer-reviewed, formally verified
 (for example in Lean), reproduced independently, reviewed by named outside experts, or only claimed so far.
 
@@ -281,9 +309,11 @@ Accuracy rules. These matter more than anything else:
 - Separate what was claimed from what has been verified. Never overstate a result.
 - Never invent names, dates, or numbers. Leave out anything you can't confirm in search.
 - {MATH_RULE}
-- About 350 words per article. At most 2 terms and 3 sources per article. Sources must be URLs you found.
+- About 450 words per article. "terms": up to 5, including every acronym used. At most 3 sources per article.
+  Sources must be URLs you found.
+{STYLE}
 Respond with ONLY a JSON array of {n} object(s) shaped like {SCI_SHAPE}. No preamble, no commentary, no markdown fences."""
-    arr = extract(call(prompt, search=True, max_tokens=6000), "[", "]")
+    arr = extract(call(prompt, search=True, max_tokens=8000), "[", "]")
     if not isinstance(arr, list) or not arr:
         raise ValueError("No stories were filed.")
     return [normalize(a) for a in arr[:n]]
@@ -291,7 +321,7 @@ Respond with ONLY a JSON array of {n} object(s) shaped like {SCI_SHAPE}. No prea
 
 def fact_check(a, sec, date_long):
     """Second pass with web search: verify each claim and correct or remove what doesn't hold up."""
-    draft = {k: a[k] for k in ("headline", "dek", "background", "body", "status", "why", "terms", "sources")}
+    draft = {k: a[k] for k in ("headline", "dek", "background", "body", "status", "recap", "why", "terms", "sources")}
     prompt = f"""You are the fact-checking editor of a technical newsletter. Today is {date_long}.
 Use web search to verify every specific claim in this draft from the {sec['name']} section: names, dates,
 numbers, which organization and model did what, the history in the background, and the verification status.
@@ -301,9 +331,12 @@ Draft (JSON):
 {json.dumps(draft, ensure_ascii=False)}
 
 Correct anything wrong. Remove anything you cannot confirm. Make sure "status" does not overstate how well the
-result has been verified. Keep only source URLs you confirmed. Keep the structure, length, and style.
+result has been verified. Keep only source URLs you confirmed. Also fix any breach of the house style below:
+spell out acronyms on first use, define terms, and explain every symbol after each equation.
+{STYLE}
+Keep the structure and length.
 Respond with ONLY the corrected JSON object shaped like {SCI_SHAPE}. No preamble, no markdown fences."""
-    fixed = normalize(extract(call(prompt, search=True, max_tokens=5000), "{", "}"))
+    fixed = normalize(extract(call(prompt, search=True, max_tokens=7000), "{", "}"))
     fixed["checked"] = True
     return fixed
 
@@ -320,13 +353,22 @@ most recent: papers, model releases, technical reports, and engineering write-up
 article(s) about different developments.
 {avoid_line}
 
+{STYLE}
+
+Write each body as 4 or 5 short paragraphs, about 350 words, in this order:
+1. What happened: who did what, and when, in plain words.
+2. The reminder: the underlying idea this work builds on, explained briefly as if the reader last saw it years ago.
+3. How the new method works: intuition first, then the mechanism, then the key equation if one helps.
+4. Results and caveats: what was measured, against what, and what remains unproven.
+
 Rules:
 - Be concrete: name models, organizations, parameter counts, architectural choices, training objectives, benchmark results, and dates. Never invent numbers; leave out anything you can't confirm.
 - {MATH_RULE}
-- Body: 2 or 3 paragraphs, about 180 words in total, in your own words.
-- At most 2 terms and 2 sources per article. Sources must be URLs you found in search.
+- "recap": exactly 3 short sentences the reader should remember.
+- "terms": up to 5, including every acronym used, each with a plain definition.
+- At most 2 sources per article. Sources must be URLs you found in search.
 - Respond with ONLY a JSON array of {n} object(s) shaped like {SHAPE}. No preamble, no commentary, no markdown fences."""
-    arr = extract(call(prompt, search=True), "[", "]")
+    arr = extract(call(prompt, search=True, max_tokens=7000), "[", "]")
     if not isinstance(arr, list) or not arr:
         raise ValueError("No stories were filed.")
     return [normalize(a) for a in arr[:n]]
@@ -364,14 +406,30 @@ def primer(idx):
     topic = PRIMERS[idx]
     prompt = f"""{READER}
 Write today's catch-up primer on: "{topic}".
-Three paragraphs, about 280 words: the core idea and the problem it solves; the mechanism and key mathematics;
-where it shows up in today's frontier and open-weight models.
-- {MATH_RULE} Use at least one display equation.
-- Terms: up to 3. Sources: up to 2 canonical papers. Only give a URL if it is an arXiv abstract page you are certain of; otherwise use an empty string for url.
-- Respond with ONLY a JSON object shaped like {SHAPE}. No preamble, no markdown fences."""
+{TEACHING}
+{STYLE}
+
+Write the body as 7 to 9 short paragraphs (about 750 words in total), in this order:
+1. The problem: what goes wrong without this idea, in plain words.
+2. The intuition: an everyday analogy, and where the analogy breaks down.
+3. The vocabulary: define each key term before using it, one or two sentences each, including what each vector
+   or quantity represents (for attention, for example: query, key, value, score, weight).
+4. A tiny worked example with small concrete numbers (for example 3 tokens with 2-dimensional vectors), computed
+   step by step so the reader could check it by hand. Choose numbers that keep the arithmetic easy, round to two
+   decimals, and make sure every number is correct.
+5. The general math: the key equation or equations in display LaTeX, with every symbol and its shape
+   (dimensions) defined, and how the worked example maps onto it.
+6. Common confusions: one paragraph on mistakes people often make with this idea.
+7. Where it shows up in today's frontier and open-weight models.
+
+- {MATH_RULE}
+- "recap": exactly 3 short sentences the reader should remember.
+- "terms": up to 5, with plain definitions.
+- "sources": up to 2 canonical papers. Only give a URL if it is an arXiv abstract page you are certain of; otherwise use an empty string for url.
+- Respond with ONLY a JSON object shaped like {PRIMER_SHAPE}. No preamble, no markdown fences."""
     try:
-        a = normalize(extract(call(prompt), "{", "}"))
-        a = review(a, "No curated list for this topic. Keep paper titles and years only if they are certain.", SHAPE)
+        a = normalize(extract(call(prompt, max_tokens=5000), "{", "}"))
+        a = review(a, "No curated list for this topic. Keep paper titles and years only if they are certain.", PRIMER_SHAPE)
         return {"status": "done", "articles": [a]}
     except Exception as e:  # noqa: BLE001
         print(f"[primer] failed: {e}")
@@ -385,8 +443,9 @@ def refs_text(tb):
     return lines
 
 
-TB_SHAPE = ('{"headline":"...","dek":"one-sentence summary","body":["paragraph","paragraph","paragraph"],'
-            '"why":"one sentence on why it still matters","terms":[{"term":"...","def":"under 15 words"}]}')
+TB_SHAPE = ('{"headline":"...","dek":"one-sentence summary","body":["paragraph","..."],'
+            '"recap":["sentence to remember","sentence","sentence"],'
+            '"why":"one sentence on why it still matters","terms":[{"term":"...","def":"plain definition"}]}')
 ACCURACY = """Accuracy rules. These matter more than anything else:
 - Mention only papers from the reference list, with their authors and years exactly as listed. Do not add other papers, people, dates, venues, or benchmark numbers, except the verified details given.
 - Every equation must be standard and correct, with each symbol defined.
@@ -402,14 +461,18 @@ References:
 {references}
 
 Draft (JSON):
-{json.dumps({k: article[k] for k in ("headline", "dek", "body", "why", "terms", "sources") if k in article}, ensure_ascii=False)}
+{json.dumps({k: article[k] for k in ("headline", "dek", "body", "recap", "why", "terms", "sources") if article.get(k)}, ensure_ascii=False)}
 
-Correct any equation errors and undefined symbols. Remove any name, date, venue, number, or attribution that
+Recompute every worked numerical example step by step and fix any arithmetic error, including values that
+depend on it later in the text. Correct any equation errors and undefined symbols. Remove any name, date, venue, number, or attribution that
 the references don't support and that isn't settled textbook knowledge. Remove any URL that isn't an arXiv
-abstract page you are certain of. Keep the length, structure, and style otherwise.
+abstract page you are certain of. Also fix any breach of the house style below: spell out acronyms on first
+use, define terms, and explain every symbol after each equation.
+{STYLE}
+Keep the length and structure otherwise.
 Respond with ONLY the corrected JSON object shaped like {shape}. No preamble, no markdown fences."""
     try:
-        fixed = normalize(extract(call(prompt, max_tokens=3000), "{", "}"))
+        fixed = normalize(extract(call(prompt, max_tokens=5000), "{", "}"))
         if "sources" not in shape:
             fixed["sources"] = article.get("sources", [])
         return fixed
@@ -427,14 +490,19 @@ Write today's Throwback, a look back at a landmark idea in machine learning: "{t
 Reference list (curated and verified; your only source for names, titles, venues, and years):
 {refs}
 
-About 400 words in 3 or 4 paragraphs: the problem researchers faced at the time; the core mechanism, with its key
-equations; and what changed afterward, including where the idea lives in today's models.
+{TEACHING}
+{STYLE}
+About 600 words in 5 to 7 paragraphs: the problem researchers faced at the time; the intuition; the vocabulary,
+defined before use; the core mechanism with its key equations, every symbol defined; a tiny worked example with
+small numbers where the mechanism allows one (make sure the arithmetic is correct); and what changed afterward,
+including where the idea lives in today's models.
+"recap": exactly 3 short sentences the reader should remember.
 - {MATH_RULE} Use at least one display equation.
 - Terms: up to 3.
 {ACCURACY}
 Respond with ONLY a JSON object shaped like {TB_SHAPE}. No preamble, no markdown fences."""
     try:
-        a = normalize(extract(call(prompt), "{", "}"))
+        a = normalize(extract(call(prompt, max_tokens=5000), "{", "}"))
         a = review(a, refs, TB_SHAPE)
         a["sources"] = [{"title": cite, "url": url} for cite, url in tb["papers"]]
         a["era"] = tb["era"]
@@ -448,18 +516,21 @@ def deeper(item):
     a, refs = item
     ref_block = f"\nReference list (your only source for names, titles, venues, and years):\n{refs}\n{ACCURACY}\n" if refs else ""
     prompt = f"""{READER}
-Expand this brief into a deeper technical explainer of about 450 words.
+Expand this brief into a deeper technical explainer of about 600 words.
+{STYLE}
 
 Headline: {a['headline']}
 Background: {' '.join(a.get('background') or [])}
 Brief: {' '.join(a['body'])}
 {ref_block}
 Do not add names, dates, or numbers beyond those above unless they are settled textbook facts.
-Cover the mechanism step by step, the key mathematics, how it compares with prior approaches, and open questions
-or limitations. Use LaTeX with \\( \\) inline and \\[ \\] for display equations. Write plain paragraphs separated by
+Cover, in order: a reminder of the prerequisite ideas; the mechanism step by step, intuition first; the key
+mathematics, with every symbol explained after each equation; a small worked example with numbers if the idea
+allows one (make sure the arithmetic is correct); how it compares with earlier approaches; and open questions or
+limitations. Use LaTeX with \\( \\) inline and \\[ \\] for display equations. Write plain paragraphs separated by
 blank lines: no headings, no markdown, no preamble."""
     try:
-        return [p.strip() for p in re.split(r"\n\s*\n", call(prompt, max_tokens=2000)) if p.strip()]
+        return [p.strip() for p in re.split(r"\n\s*\n", call(prompt, max_tokens=3500)) if p.strip()]
     except Exception as e:  # noqa: BLE001
         print(f"[deeper] failed for {a['headline']!r}: {e}")
         return []
@@ -467,6 +538,9 @@ blank lines: no headings, no markdown, no preamble."""
 
 def main():
     force = "--force" in sys.argv
+    only = set()
+    if "--only" in sys.argv:
+        only = {x.strip() for x in sys.argv[sys.argv.index("--only") + 1].split(",") if x.strip()}
     now = datetime.datetime.now(TZ)
     date = now.date().isoformat()
     path = EDITIONS / f"{date}.json"
@@ -495,20 +569,33 @@ def main():
             for sid, sec in json.loads(p.read_text()).get("sections", {}).items():
                 avoid.setdefault(sid, []).extend(a["headline"] for a in sec.get("articles", []))
 
+    if only and not rebuilding:
+        sys.exit("--only updates an existing edition, and today's hasn't been printed yet.")
+    all_ids = [sec["id"] for sec in SECTIONS] + ["primer", "throwback"]
+    unknown = only - set(all_ids)
+    if unknown:
+        sys.exit(f"Unknown section(s): {', '.join(sorted(unknown))}. Choose from: {', '.join(all_ids)}.")
+    targets = only or set(all_ids)
+
     date_long = now.strftime("%A, %B %-d, %Y")
     with cf.ThreadPoolExecutor(max_workers=3) as ex:
         day_number = now.date().toordinal()
-        futures = {sec["id"]: ex.submit(section, sec, avoid.get(sec["id"], [])[:12], date_long, day_number) for sec in SECTIONS}
-        futures["primer"] = ex.submit(primer, primer_idx)
-        futures["throwback"] = ex.submit(throwback, tb_idx)
-        sections = {sid: f.result() for sid, f in futures.items()}
+        futures = {sec["id"]: ex.submit(section, sec, avoid.get(sec["id"], [])[:12], date_long, day_number)
+                   for sec in SECTIONS if sec["id"] in targets}
+        if "primer" in targets:
+            futures["primer"] = ex.submit(primer, primer_idx)
+        if "throwback" in targets:
+            futures["throwback"] = ex.submit(throwback, tb_idx)
+        fresh = {sid: f.result() for sid, f in futures.items()}
+    sections = dict(json.loads(path.read_text())["sections"]) if only else {}
+    sections.update(fresh)
 
-    if not any(sections[sec["id"]]["status"] == "done" for sec in SECTIONS):
+    if not only and not any(sections[sec["id"]]["status"] == "done" for sec in SECTIONS):
         sys.exit("Every news section failed; not publishing. Check the API key and the logs above.")
 
     if DEEPER:
         items = [(a, refs_text(THROWBACKS[tb_idx]) if sid == "throwback" else None)
-                 for sid, sec in sections.items() for a in sec.get("articles", [])]
+                 for sid, sec in fresh.items() for a in sec.get("articles", [])]
         with cf.ThreadPoolExecutor(max_workers=4) as ex:
             for (a, _), paras in zip(items, ex.map(deeper, items)):
                 a["deeper"] = paras

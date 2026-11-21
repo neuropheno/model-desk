@@ -23,6 +23,13 @@ headline opens straight to its story.
    Then open your `SITE_URL`.
 6. **Test the email:** Actions tab > "Morning reminder email" > Run workflow.
 
+## House style
+
+Every piece follows one style, set in `STYLE` in `build_edition.py`: acronyms are spelled out on first use,
+every term is defined when it appears, every symbol is explained after each equation, and intuition comes
+before math. Each story ends with three "Remember" sentences. Both fact-check passes also enforce the style.
+To adjust it, edit that one block.
+
 ## Discoveries
 
 Each Discoveries story opens with the backstory (the problem or theorem stated precisely, who posed it and when,
@@ -37,6 +44,12 @@ Add an entry to `SECTIONS` in `build_edition.py` with an `id`, `name`, and `brie
 Optional settings: `days` (how far back to search), `focus` (topics to rotate through), `backstory` (write the
 history first), and `fact_check` (verify claims with a second search). The site and email pick it up the next
 morning.
+
+## Reprinting one section
+
+To redo part of today's edition, run the "Print The Model Desk" workflow with **force** checked and **only** set
+to the sections you want, such as `primer` or `primer,throwback`. From the terminal:
+`gh workflow run print.yml -f force=true -f only=primer`. Everything else in the edition stays as it was.
 
 ## How the Throwback stays accurate
 
