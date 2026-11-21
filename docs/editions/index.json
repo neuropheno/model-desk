@@ -7,35 +7,35 @@
  "curriculum": [
   "The transformer revisited: attention as a soft dictionary lookup",
   "Tokenization and byte-pair encoding",
-  "Positional encodings: from sinusoids to RoPE",
+  "Positional encodings: from sinusoids to rotary position embeddings (RoPE)",
   "Scaling laws: from Kaplan to Chinchilla",
   "FlashAttention and IO-aware kernels",
-  "The KV cache and why decoding is memory-bound",
+  "The key-value cache and why generating text is limited by memory",
   "Grouped-query and multi-head latent attention",
   "Mixture-of-experts routing and load balancing",
   "Instruction tuning and supervised fine-tuning",
-  "RLHF: reward models and PPO",
-  "Direct Preference Optimization",
-  "GRPO and reinforcement learning from verifiable rewards",
+  "Reinforcement learning from human feedback (RLHF): reward models and proximal policy optimization (PPO)",
+  "Direct preference optimization (DPO)",
+  "Group relative policy optimization (GRPO) and reinforcement learning from verifiable rewards",
   "Reasoning models and test-time compute",
-  "LoRA and parameter-efficient fine-tuning",
-  "Quantization: from INT8 to 4-bit and below",
+  "Low-rank adaptation (LoRA) and parameter-efficient fine-tuning",
+  "Quantization: from 8-bit integers to 4-bit numbers and below",
   "Speculative decoding",
   "Extending context length and its limits",
   "State-space models and Mamba",
   "Hybrid attention and state-space architectures",
   "Knowledge distillation for large models",
   "Synthetic data and data curation",
-  "Retrieval-augmented generation",
+  "Retrieval-augmented generation (RAG)",
   "Tool use and function calling",
   "Agents: planning loops and scaffolds",
-  "Vision transformers and contrastive pretraining (CLIP)",
+  "Vision transformers and contrastive language-image pretraining (CLIP)",
   "Vision-language models",
-  "Diffusion models: score matching and DDPM",
+  "Diffusion models: score matching and denoising diffusion probabilistic models (DDPM)",
   "Flow matching and rectified flow",
   "Diffusion transformers",
   "Video generation and learned world models",
-  "Vision-language-action models",
+  "Vision-language-action models (VLAs)",
   "Diffusion policies for robot control",
   "Mechanistic interpretability and circuits",
   "Sparse autoencoders and learned features",
@@ -44,7 +44,7 @@
   "Parallelism at scale: data, tensor, pipeline, expert",
   "Constitutional AI and safety training",
   "Multi-token prediction",
-  "Serving: continuous batching and PagedAttention"
+  "Serving models: continuous batching and paged attention memory"
  ],
  "throwbacks": [
   {
@@ -84,7 +84,7 @@
    "era": "2012"
   },
   {
-   "topic": "word2vec and distributed word representations",
+   "topic": "word2vec and learned word vectors",
    "era": "2013"
   },
   {
@@ -92,7 +92,7 @@
    "era": "2013 to 2014"
   },
   {
-   "topic": "Deep Q-networks",
+   "topic": "Deep Q-networks (DQN): learning action values from pixels",
    "era": "2013 to 2015"
   },
   {
@@ -132,7 +132,7 @@
    "era": "2015 to 2016"
   },
   {
-   "topic": "Deterministic policy gradients and DDPG",
+   "topic": "Deterministic policy gradients and deep deterministic policy gradient (DDPG)",
    "era": "2014 to 2015"
   },
   {
@@ -140,7 +140,7 @@
    "era": "2015"
   },
   {
-   "topic": "Trust regions, GAE, and PPO",
+   "topic": "Trust regions, generalized advantage estimation (GAE), and proximal policy optimization (PPO)",
    "era": "2015 to 2017"
   },
   {
@@ -172,7 +172,7 @@
    "era": "2018"
   },
   {
-   "topic": "Protein folding: Anfinsen's hypothesis and the CASP challenge",
+   "topic": "Protein folding: Anfinsen's hypothesis and the Critical Assessment of protein Structure Prediction (CASP)",
    "era": "1960s to 2020"
   },
   {
