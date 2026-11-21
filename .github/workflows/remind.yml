@@ -1,0 +1,25 @@
+name: Morning reminder email
+
+on:
+  schedule:
+    # 11:00 UTC is 7:00 US Eastern in summer; 12:00 UTC is 7:00 in winter.
+    # The script only sends during the 7 o'clock hour local time.
+    - cron: "0 11 * * *"
+    - cron: "0 12 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python send_reminder.py ${{ github.event_name == 'workflow_dispatch' && '--force' || '' }}
+        env:
+          TIMEZONE: ${{ vars.TIMEZONE }}
+          SITE_URL: ${{ vars.SITE_URL }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+          MAIL_TO: ${{ secrets.MAIL_TO }}

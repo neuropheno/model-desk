@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>The Model Desk</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
+<style>
+:root{
+  --paper:#ffffff; --ink:#000000; --ink2:#333333; --muted:#6b6b6b; --rule:#dcdcdc;
+  --accent:#2f6690; --primer:#eef3f7; --primer-ink:#1f4a6b; --err:#9b2c2c;
+  --serif:"Iowan Old Style","Charter","Bitstream Charter","Sitka Text",Cambria,Georgia,serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue",Arial,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#161616; --ink:#f2f2f2; --ink2:#d4d4d4; --muted:#9b9b9b; --rule:#343434;
+    --accent:#8cb8dc; --primer:#1c252d; --primer-ink:#a9cbe6; --err:#e8a0a0;
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--paper);color:var(--ink2)}
+body{font-family:var(--serif);-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}
+button{font:inherit;color:inherit}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+.mast{position:sticky;top:0;z-index:5;background:var(--paper);border-bottom:1px solid var(--rule);padding-top:env(safe-area-inset-top)}
+.mast-top{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;max-width:720px;margin:0 auto;padding:10px 16px 0}
+.mast h1{margin:0;font-weight:700;font-size:30px;letter-spacing:-.015em;color:var(--ink);text-align:center;white-space:nowrap}
+.text-btn{background:none;border:0;padding:8px 0;font-family:var(--sans);font-size:14px;color:var(--accent);cursor:pointer}
+.mast-top .text-btn{justify-self:start}
+.dateline{margin:2px 0 6px;font-family:var(--sans);font-size:12px;color:var(--muted);text-align:center}
+.dateline .text-btn{font-size:12px;padding:0}
+.tabs{display:flex;gap:22px;overflow-x:auto;max-width:720px;margin:0 auto;padding:0 16px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:none;background:none;border:0;border-bottom:3px solid transparent;padding:8px 0 9px;font-family:var(--sans);font-size:14px;color:var(--muted);cursor:pointer}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--ink);font-weight:600}
+
+main{max-width:720px;margin:0 auto;padding:0 16px 80px}
+.story{display:block;padding:18px 0;border-bottom:1px solid var(--rule);text-decoration:none;color:inherit}
+.kicker{margin:0 0 6px;font-family:var(--sans);font-size:12px;font-weight:600;color:var(--accent)}
+.headline{margin:0 0 6px;font-weight:700;font-size:20px;line-height:1.22;color:var(--ink)}
+.lead .headline{font-size:29px;line-height:1.14;letter-spacing:-.012em}
+.dek{margin:0 0 8px;font-size:16px;line-height:1.45}
+.lead .dek{font-size:17px}
+.meta{margin:0;font-family:var(--sans);font-size:12px;color:var(--muted)}
+.story.read .headline{color:var(--muted)}
+.section-head{margin:34px 0 0;padding-top:8px;border-top:2px solid var(--ink);font-size:22px;font-weight:700;color:var(--ink)}
+.section-note{margin:12px 0;font-family:var(--sans);font-size:13px;color:var(--muted)}
+.pending{margin:14px 0;font-family:var(--sans);font-size:14px;color:var(--muted);animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{50%{opacity:.45}}
+@media (prefers-reduced-motion: reduce){.pending{animation:none}}
+.error{margin:14px 0;font-family:var(--sans);font-size:14px;color:var(--err)}
+.error p{margin:0 0 4px}
+
+.primer{margin:28px -16px 0;padding:18px 16px 4px;background:var(--primer)}
+.primer-label{margin:0 0 10px;font-family:var(--sans);font-size:13px;font-weight:600;color:var(--primer-ink)}
+.track{display:flex;gap:2px;margin:0 0 4px}
+.track span{flex:1;height:4px;background:var(--rule)}
+.track span.done{background:var(--primer-ink);opacity:.55}
+.track span.now{background:var(--primer-ink)}
+.primer .story{border-bottom:0}
+.curriculum{margin:8px 0 0;padding-left:28px;font-size:16px;line-height:1.5}
+.curriculum li{padding:4px 0;color:var(--ink2)}
+.curriculum li.done{color:var(--muted)}
+.curriculum li.now{color:var(--ink);font-weight:700}
+
+.reader{position:fixed;inset:0;z-index:10;overflow-y:auto;background:var(--paper)}
+.reader-bar{position:sticky;top:0;display:flex;justify-content:space-between;align-items:center;padding:calc(6px + env(safe-area-inset-top)) 16px 6px;background:var(--paper);border-bottom:1px solid var(--rule)}
+.reader-bar span{font-family:var(--sans);font-size:13px;font-weight:600;color:var(--accent)}
+.reader article{max-width:660px;margin:0 auto;padding:22px 18px 90px}
+.r-headline{margin:0 0 10px;font-size:31px;line-height:1.12;letter-spacing:-.015em;color:var(--ink)}
+.r-dek{margin:0 0 12px;font-size:19px;line-height:1.4;color:var(--ink2)}
+.reader article > .meta{padding-bottom:18px;border-bottom:1px solid var(--rule);margin-bottom:20px}
+.r-body p{margin:0 0 18px;font-size:18px;line-height:1.62;color:var(--ink2)}
+.r-sub{margin:26px 0 10px;font-family:var(--sans);font-size:13px;font-weight:600;color:var(--accent)}
+.status{margin:6px 0 0;padding:12px 14px;background:var(--primer);font-family:var(--sans);font-size:14px;line-height:1.5;color:var(--ink2)}
+.status strong{color:var(--ink)}
+.why{margin:26px 0;padding:2px 0 2px 16px;border-left:3px solid var(--accent)}
+.why h3,.terms h3,.sources h3,.deeper h3{margin:0 0 6px;font-family:var(--sans);font-size:13px;font-weight:600;color:var(--ink)}
+.why p{margin:0;font-size:17px;line-height:1.5;font-style:italic}
+.terms dl{margin:0}
+.terms dt{font-weight:700;color:var(--ink);font-size:16px}
+.terms dd{margin:0 0 10px;font-size:16px;line-height:1.45}
+.deeper{margin:28px 0;padding-top:16px;border-top:1px solid var(--rule)}
+.deeper p{margin:0 0 16px;font-size:17px;line-height:1.6}
+.deeper-btn{display:block;width:100%;padding:12px;border:1px solid var(--ink);background:none;font-family:var(--sans);font-size:15px;font-weight:600;color:var(--ink);cursor:pointer}
+.sources{margin-top:26px;padding-top:14px;border-top:1px solid var(--rule)}
+.sources ul{margin:0;padding-left:18px;font-family:var(--sans);font-size:14px;line-height:1.6}
+.katex{font-size:1.04em}
+.katex-display{overflow-x:auto;overflow-y:hidden;padding:4px 0}
+
+.sheet-backdrop{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.4);display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:100%;max-width:560px;max-height:80vh;overflow-y:auto;background:var(--paper);padding:18px 18px calc(24px + env(safe-area-inset-bottom))}
+.sheet h2{margin:0 0 10px;font-size:22px;color:var(--ink)}
+.sheet ul{list-style:none;margin:0;padding:0}
+.sheet li button{display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--rule);padding:13px 0;font-size:17px;color:var(--ink);cursor:pointer}
+.sheet .row{display:flex;justify-content:space-between;margin-top:14px}
+</style>
+</head>
+<body>
+<header class="mast">
+  <div class="mast-top">
+    <button class="text-btn" id="editionsBtn">Editions</button>
+    <h1>The Model Desk</h1>
+    <span></span>
+  </div>
+  <p class="dateline" id="dateline"></p>
+  <nav class="tabs" id="tabs" role="tablist"></nav>
+</header>
+<main id="front"><p class="pending">Opening today's edition…</p></main>
+<div class="reader" id="reader" hidden role="dialog" aria-modal="true"></div>
+<div id="sheetRoot"></div>
+<script>
+let index=null, ed=null, tab="today";
+const READ_KEY="model-desk-read";
+let read=new Set(); try{ read=new Set(JSON.parse(localStorage.getItem(READ_KEY)||"[]")); }catch(e){}
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const longDate=k=>{const [y,m,d]=k.split("-").map(Number);return new Date(y,m-1,d).toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"});};
+const minutes=a=>Math.max(1,Math.round([...(a.background||[]),...a.body].join(" ").split(/\s+/).length/200));
+const sections=()=>index.sections||[];
+const nameOf=id=>id==="primer"?"Catch-up primer":id==="throwback"?"Throwback":(sections().find(s=>s.id===id)||{}).name||id;
+const order=()=>[...sections().map(s=>s.id).slice(0,2),"primer",...sections().map(s=>s.id).slice(2)];
+const articleId=(sid,i)=>ed.date+"/"+sid+"/"+i;
+const getArticle=(sid,i)=>((ed.sections[sid]||{}).articles||[])[i];
+function markRead(id){ read.add(id); try{ localStorage.setItem(READ_KEY,JSON.stringify([...read].slice(-2000))); }catch(e){} }
+function renderMath(el){ if(!window.renderMathInElement) return; try{ renderMathInElement(el,{delimiters:[{left:"$$",right:"$$",display:true},{left:"\\[",right:"\\]",display:true},{left:"\\(",right:"\\)",display:false}],throwOnError:false}); }catch(e){} }
+async function getJSON(p){ const r=await fetch(p,{cache:"no-cache"}); if(!r.ok) throw new Error(p+" returned "+r.status); return r.json(); }
+
+function storyHTML(sid,i,a,{lead=false,kicker=false}={}){
+  const id=articleId(sid,i), isRead=read.has(id);
+  return `<a href="#${id}" class="story${lead?" lead":""}${isRead?" read":""}" data-open="${sid}/${i}">
+    ${kicker?`<p class="kicker">${esc(nameOf(sid))}</p>`:""}
+    <h3 class="headline">${esc(a.headline)}</h3>
+    <p class="dek">${esc(a.dek)}</p>
+    <p class="meta">${minutes(a)} min read${a.deeper&&a.deeper.length?", plus a deeper explainer":""}${isRead?", read":""}</p></a>`;
+}
+function statusHTML(sid){
+  const st=ed.sections[sid];
+  if(!st||st.status!=="done") return `<p class="section-note">${esc((st&&st.error)||"This section wasn't filed today.")}</p>`;
+  return null;
+}
+function primerBlock(){
+  const list=index.curriculum||[], n=list.length||1, pos=(ed.primerIndex||0)%n;
+  const track=list.map((_,k)=>`<span class="${k<pos?"done":k===pos?"now":""}"></span>`).join("");
+  const a=getArticle("primer",0);
+  return `<section class="primer" aria-label="Catch-up primer"><p class="primer-label">Catch-up primer ${pos+1} of ${n}</p>
+    <div class="track" aria-hidden="true">${track}</div>${a?storyHTML("primer",0,a):statusHTML("primer")}</section>`;
+}
+function throwbackBlock(){
+  const list=index.throwbacks||[], n=list.length||1, pos=(ed.throwbackIndex||0)%n;
+  const a=getArticle("throwback",0);
+  return `<h2 class="section-head">Throwback</h2><p class="section-note">${a&&a.era?esc(a.era)+". ":""}Throwback ${pos+1} of ${n}</p>
+    ${a?storyHTML("throwback",0,a):statusHTML("throwback")}`;
+}
+function renderToday(){
+  const news=sections().flatMap(s=>((ed.sections[s.id]||{}).articles||[]).map((a,i)=>({sid:s.id,i,a})));
+  const lead=news[0]; let html="";
+  if(lead) html+=storyHTML(lead.sid,lead.i,lead.a,{lead:true,kicker:true});
+  html+=primerBlock();
+  for(const s of sections()){
+    html+=`<h2 class="section-head">${esc(s.name)}</h2>`;
+    const st=statusHTML(s.id); if(st){ html+=st; continue; }
+    const items=ed.sections[s.id].articles.map((a,i)=>({a,i})).filter(x=>!(lead&&lead.sid===s.id&&lead.i===x.i));
+    html+=items.length?items.map(x=>storyHTML(s.id,x.i,x.a)).join(""):`<p class="section-note">This section's story leads today's edition.</p>`;
+  }
+  if(ed.sections.throwback) html+=throwbackBlock();
+  return html;
+}
+function renderSection(sid){
+  if(sid==="primer"){
+    const list=index.curriculum||[], pos=(ed.primerIndex||0)%(list.length||1);
+    return primerBlock()+`<h2 class="section-head">The curriculum</h2><p class="section-note">One primer a day, in order, from transformer basics to current robot learning.</p>
+      <ol class="curriculum">${list.map((t,k)=>`<li class="${k<pos?"done":k===pos?"now":""}">${esc(t)}</li>`).join("")}</ol>`;
+  }
+  if(sid==="throwback"){
+    const list=index.throwbacks||[], pos=(ed.throwbackIndex||0)%(list.length||1);
+    return throwbackBlock()+`<h2 class="section-head">The archive</h2><p class="section-note">Landmark ideas in order, one a day, each checked against a curated list of the original papers.</p>
+      <ol class="curriculum">${list.map((t,k)=>`<li class="${k<pos?"done":k===pos?"now":""}">${esc(t.topic)} <span class="meta">(${esc(t.era)})</span></li>`).join("")}</ol>`;
+  }
+  const st=statusHTML(sid); if(st) return `<h2 class="section-head">${esc(nameOf(sid))}</h2>`+st;
+  return ed.sections[sid].articles.map((a,i)=>storyHTML(sid,i,a,{lead:i===0})).join("");
+}
+function render(){
+  const latest=ed.date===index.editions[0];
+  $("#dateline").innerHTML=latest?esc(longDate(ed.date)):`Edition of ${esc(longDate(ed.date))}. <button class="text-btn" data-latest>Back to latest</button>`;
+  const tabs=[{id:"today",name:latest?"Today":"Front page"},...sections(),{id:"primer",name:"Primer"},...(index.throwbacks?[{id:"throwback",name:"Throwback"}]:[])];
+  $("#tabs").innerHTML=tabs.map(t=>`<button class="tab" role="tab" aria-selected="${t.id===tab}" data-tab="${t.id}">${esc(t.name)}</button>`).join("");
+  const main=$("#front"); main.innerHTML=tab==="today"?renderToday():renderSection(tab); renderMath(main);
+}
+
+let lastFocus=null;
+function openReader(sid,i,{push=true}={}){
+  const a=getArticle(sid,i); if(!a) return;
+  const id=articleId(sid,i); markRead(id);
+  if(push) history.pushState(null,"","#"+id);
+  lastFocus=document.activeElement;
+  const deep=a.deeper&&a.deeper.length?`<section class="deeper"><button class="deeper-btn" data-deeper>Go deeper on this story</button>
+     <div hidden data-deeper-body><h3>Going deeper</h3>${a.deeper.map(p=>`<p>${esc(p)}</p>`).join("")}</div></section>`:"";
+  const r=$("#reader");
+  r.innerHTML=`<div class="reader-bar"><button class="text-btn" data-close>Back</button><span>${esc(nameOf(sid))}</span></div>
+  <article><h2 class="r-headline">${esc(a.headline)}</h2><p class="r-dek">${esc(a.dek)}</p><p class="meta">${a.era?esc(a.era)+", ":""}${minutes(a)} min read</p>
+    ${a.background&&a.background.length?`<h3 class="r-sub">The backstory</h3><div class="r-body">${a.background.map(p=>`<p>${esc(p)}</p>`).join("")}</div><h3 class="r-sub">What happened</h3>`:""}
+    <div class="r-body">${a.body.map(p=>`<p>${esc(p)}</p>`).join("")}</div>
+    ${a.status?`<p class="status"><strong>Verification status.</strong> ${esc(a.status)}${a.checked===false?" This story's second fact-check didn't complete, so treat its details with extra care.":""}</p>`:""}
+    ${a.why?`<aside class="why"><h3>Why it matters</h3><p>${esc(a.why)}</p></aside>`:""}
+    ${a.terms.length?`<section class="terms"><h3>Key terms</h3><dl>${a.terms.map(t=>`<dt>${esc(t.term)}</dt><dd>${esc(t.def)}</dd>`).join("")}</dl></section>`:""}
+    ${deep}
+    ${a.sources.length?`<section class="sources"><h3>${sid==="throwback"?"Key publications":"Sources"}</h3><ul>${a.sources.map(s=>`<li>${/^https?:\/\//.test(s.url||"")?`<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a>`:esc(s.title)}</li>`).join("")}</ul></section>`:""}
+  </article>`;
+  r.hidden=false; r.scrollTop=0; document.body.style.overflow="hidden"; renderMath(r);
+  r.querySelector("[data-close]").focus();
+}
+function closeReader({pop=false}={}){
+  if($("#reader").hidden) return;
+  $("#reader").hidden=true; document.body.style.overflow="";
+  if(!pop) history.pushState(null,"","#"+ed.date);
+  render(); if(lastFocus&&document.contains(lastFocus)) lastFocus.focus();
+}
+
+async function loadEdition(date){
+  ed=await getJSON("editions/"+date+".json");
+  ed.sections=ed.sections||{};
+  for(const s of Object.values(ed.sections)) (s.articles||[]).forEach(a=>{a.body=a.body||[];a.terms=a.terms||[];a.sources=a.sources||[];});
+}
+async function route({pop=false}={}){
+  const [date,sid,i]=decodeURIComponent(location.hash.slice(1)).split("/");
+  const want=index.editions.includes(date)?date:index.editions[0];
+  if(!ed||ed.date!==want){ await loadEdition(want); tab="today"; }
+  render();
+  if(sid&&i!==undefined) openReader(sid,Number(i),{push:false}); else closeReader({pop:true});
+}
+function openEditions(){
+  $("#sheetRoot").innerHTML=`<div class="sheet-backdrop" data-sheet-close><div class="sheet" role="dialog" aria-modal="true" aria-label="Past editions">
+    <h2>Editions</h2><ul>${index.editions.map(d=>`<li><button data-edition="${d}">${esc(longDate(d))}</button></li>`).join("")}</ul>
+    <div class="row"><span></span><button class="text-btn" data-sheet-close>Close</button></div></div></div>`;
+  $("#sheetRoot .sheet button").focus();
+}
+const closeSheet=()=>{ $("#sheetRoot").innerHTML=""; };
+
+document.addEventListener("click",e=>{
+  const t=e.target.closest("[data-open],[data-tab],[data-close],[data-deeper],[data-edition],[data-latest],[data-sheet-close],#editionsBtn");
+  if(!t) return;
+  if(t.matches("[data-sheet-close]")&&e.target!==t&&!e.target.matches("button")) return;
+  e.preventDefault();
+  if(t.id==="editionsBtn") return openEditions();
+  if(t.dataset.open){ const [s,i]=t.dataset.open.split("/"); return openReader(s,Number(i)); }
+  if(t.dataset.tab){ tab=t.dataset.tab; render(); window.scrollTo(0,0); return; }
+  if(t.hasAttribute("data-close")) return closeReader();
+  if(t.hasAttribute("data-deeper")){ const body=t.nextElementSibling; body.hidden=false; t.remove(); renderMath(body); body.querySelector("h3").scrollIntoView({behavior:"smooth",block:"start"}); return; }
+  if(t.dataset.edition){ closeSheet(); location.hash=t.dataset.edition; window.scrollTo(0,0); return; }
+  if(t.hasAttribute("data-latest")){ location.hash=index.editions[0]; return; }
+  if(t.hasAttribute("data-sheet-close")) return closeSheet();
+});
+document.addEventListener("keydown",e=>{ if(e.key!=="Escape") return; if($("#sheetRoot").innerHTML) closeSheet(); else closeReader(); });
+window.addEventListener("hashchange",()=>route({pop:true}).catch(showError));
+function showError(err){ $("#front").innerHTML=`<div class="error"><p>Couldn't load the edition: ${esc(err.message)}.</p><button class="text-btn" onclick="location.reload()">Reload</button></div>`; }
+
+async function init(){
+  try{
+    index=await getJSON("editions/index.json");
+    if(!index.editions||!index.editions.length){
+      $("#dateline").textContent=new Date().toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"});
+      $("#front").innerHTML=`<div class="story lead"><h2 class="headline">The first edition hasn't been printed yet</h2><p class="dek">Editions print each morning before 7. To print one now, run the "Print The Model Desk" workflow from the Actions tab of this site's GitHub repository.</p></div>`;
+      return;
+    }
+    await route();
+  }catch(err){ showError(err); }
+}
+document.addEventListener("DOMContentLoaded",init);
+</script>
+</body>
+</html>

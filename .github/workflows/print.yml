@@ -1,0 +1,54 @@
+name: Print The Model Desk
+
+on:
+  schedule:
+    # Two runs an hour apart so one lands just after 6:00 local time all year.
+    # For US Eastern: 10:30 UTC is 6:30 in summer, 11:30 UTC is 6:30 in winter.
+    # The script skips the run that's too early or redundant.
+    - cron: "30 10 * * *"
+    - cron: "30 11 * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Reprint today's edition even if it exists"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: print
+  cancel-in-progress: false
+
+jobs:
+  print:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install anthropic
+      - name: Report and write today's edition
+        run: python build_edition.py ${{ inputs.force && '--force' || '' }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          TIMEZONE: ${{ vars.TIMEZONE }}
+      - name: Save the edition to the repository
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898283+github-actions[bot]@users.noreply.github.com"
+          git add docs/editions
+          git diff --cached --quiet || (git commit -m "Edition $(date -u +%F)" && git push)
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+      - id: deploy
+        uses: actions/deploy-pages@v4
