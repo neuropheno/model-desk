@@ -1,0 +1,683 @@
+{
+ "date": "2026-11-22",
+ "created": "2026-11-22T07:58:42.717049-05:00",
+ "primerIndex": 1,
+ "throwbackIndex": 1,
+ "sections": {
+  "architectures": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "Hybrid language models need two kinds of memory. A new server shifts space between them as demand changes",
+     "dek": "TideCache, a serving system posted on November 19, 2026, moves GPU memory between a growing cache and a fixed-size cache, and it streams some cache data through host memory to fit more requests.",
+     "body": [
+      "<cite index=\"71-2\">On November 19, 2026, researchers posted TideCache, a serving system for hybrid language models.</cite> <cite index=\"71-4\">It runs on CPU–GPU superchips, which pair a processor and a GPU on one package.</cite> It decides how to split GPU memory among the different caches a hybrid model keeps, and when to park some of that data in host memory.",
+      "Here is the background. A hybrid model mixes two layer types. <cite index=\"71-3\">Its global-attention and bounded-state layers keep different caches, and their demands vary with context length and concurrency.</cite> Recall that a key-value cache stores the keys and values of earlier tokens so they are not recomputed. A global-attention layer needs one entry per token, so its cache grows with the conversation. A bounded-state layer squeezes the past into a fixed-size summary, so its cache never grows. The growing cache costs this much memory:",
+      "\\[ M_{\\text{KV}} = 2\\,L\\,h\\,d\\,b \\]",
+      "This formula counts the bytes one global-attention layer needs for one request. The symbols are: the factor 2 for keys plus values, \\(L\\) the number of tokens in context, \\(h\\) the number of key-value heads, \\(d\\) the width of each head, and \\(b\\) the bytes per number. As an illustration (not from the paper), take \\(L=100{,}000\\), \\(h=8\\), \\(d=128\\) and \\(b=2\\). That gives 2 × 100,000 × 8 × 128 × 2 = 409,600,000 bytes, about 0.41 GB per layer. A fixed 128×128 state per head, with the same 8 heads and 2 bytes, is only 262,144 bytes, about 0.26 MB.",
+      "Picture a warehouse whose shelves can be moved while every shelf keeps its label. TideCache works this way. <cite index=\"71-5\">Its Transparent Cache Pool redistributes physical pages among cache components behind fixed virtual addresses, so cache layouts and backend interfaces stay unchanged.</cite> <cite index=\"71-1\">A Request Scheduler chooses resident or streamed execution, and it triggers capacity changes based on request size and queue state.</cite> <cite index=\"71-6,71-7\">Newly generated keys and values stay resident, and the GPU memory freed by streaming makes room for other caches and more requests.</cite>",
+      "The authors report gains on serving metrics. <cite index=\"71-8\">They implemented it in SGLang, an open-source serving engine, and tested seven model and platform setups on GB300 and GH200 chips. Against SGLang with its HiCache baseline, TideCache completes up to 2.04 times as many agent turns. It cuts median per-token latency by 20–59%, and it improves median time to first token by 1.40–3.05 times.</cite> Time to first token is how long a user waits for the first output word. The caveats: this is a single preprint, and the comparison is against one baseline in one engine. It measures speed, not model quality. I did not find independent replication."
+     ],
+     "why": "Hybrid attention is now common in open models, so the memory manager that serves them can matter as much as the architecture does.",
+     "terms": [
+      {
+       "term": "Key-value cache",
+       "def": "Stored keys and values of earlier tokens, kept so attention does not recompute them for every new token."
+      },
+      {
+       "term": "Bounded-state layer",
+       "def": "A layer, such as a linear-attention or state-space layer, that compresses the past into a fixed-size memory."
+      },
+      {
+       "term": "Time to first token",
+       "def": "The delay between sending a request and receiving the first generated token."
+      },
+      {
+       "term": "SGLang",
+       "def": "An open-source engine for serving language models."
+      },
+      {
+       "term": "HiCache",
+       "def": "SGLang's cache feature, used as the baseline in this comparison."
+      }
+     ],
+     "sources": [
+      {
+       "title": "TideCache: Efficient Hybrid LLM Serving with Transparent Cache Management and Layer-Wise Streaming",
+       "url": "https://arxiv.org/abs/2611.26619v1"
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "Hybrid models keep a cache that grows with context and a cache that stays fixed, so one static memory split wastes space.",
+      "TideCache moves physical memory pages between those caches and streams some data through host memory, without changing how the model's code addresses them.",
+      "The reported gains are up to 2.04 times more agent turns and 20–59% lower median per-token latency, but they come from one preprint and one baseline."
+     ],
+     "deeper": [
+      "Think of a hybrid language model as having two kinds of memory. A token is a word or word fragment, and context length is how many tokens the model is currently reading. Recall that a key-value cache stores the keys and values of earlier tokens so they are not recomputed. A global-attention layer lets each new token look at every earlier token, so it needs one cache entry per token and its cache grows with the conversation. A bounded-state layer squeezes the past into a fixed-size summary, so its cache never grows. Serving means running a trained model for many users. Concurrency is how many requests run at once. Host memory is the ordinary memory attached to the processor, as opposed to the graphics processing unit (GPU) memory, which is fast but scarce.",
+      "On November 19, 2026, researchers posted TideCache, a serving system for hybrid models. It targets chips that pair a central processing unit (CPU) and a GPU on one package. The problem is that the two caches compete for the same GPU memory, and their demands shift with context length and concurrency. A fixed split is always wrong for some workload.",
+      "Picture a warehouse where shelves can be moved while every shelf keeps its label. Pickers still find things by label, but the floor space is reassigned. TideCache's Transparent Cache Pool does this. A virtual address is the label the software uses, and a physical page is a block of real memory. The pool moves physical pages between caches behind fixed virtual addresses, so the model code and the backend interfaces do not change.",
+      "A Request Scheduler then chooses, per request, between two modes. Resident means the request's cache stays in GPU memory. Streamed means older keys and values wait in host memory and are fetched as needed. The scheduler decides using request size and queue state, and it triggers the memory moves. Newly generated keys and values stay resident. The GPU memory freed by streaming goes to other caches and to more requests.",
+      "Now the mathematics. The growing cache for one global-attention layer and one request is",
+      "\\[ M_{\\text{KV}} = 2\\,L\\,h\\,d\\,b. \\]",
+      "This counts the bytes needed to hold a key and a value for every token. Here 2 is for keys plus values, \\(L\\) is the number of tokens in context, \\(h\\) is the number of key-value heads (parallel attention channels), \\(d\\) is the width of each head in numbers, and \\(b\\) is bytes per number. The result is in bytes. A bounded-state layer instead holds a fixed matrix per head:",
+      "\\[ M_{\\text{state}} = h\\,d^{2}\\,b. \\]",
+      "This is the size of the fixed summary. It has no \\(L\\) in it, so it never grows. The symbols \\(h\\), \\(d\\) and \\(b\\) are as above.",
+      "As an illustration, not from the paper, take \\(L=100{,}000\\), \\(h=8\\), \\(d=128\\) and \\(b=2\\). Then \\(M_{\\text{KV}} = 2 \\times 100{,}000 \\times 8 \\times 128 \\times 2 = 409{,}600{,}000\\) bytes, about 0.41 GB for one layer. The state is \\(8 \\times 128^2 \\times 2 = 262{,}144\\) bytes, about 0.26 MB. The growing cache is roughly 1,560 times larger. At short contexts the two are closer, so the best split really does move with the workload.",
+      "Compared with earlier approaches, a static partition reserves memory for each cache in advance and wastes it when demand shifts. Tiering, which moves cold data to host memory, helps but does not rebalance memory between cache types. The authors implemented TideCache in SGLang, an open-source serving engine, and compared it with that engine's HiCache baseline. They tested seven model and platform setups on GB300 and GH200, two CPU–GPU superchips. They report up to 2.04 times as many completed agent turns, where an agent turn is one model call in a multistep task. They report 20–59% lower median per-token latency, the delay between output tokens. Median time to first token, the wait for the first output word, improved by 1.40–3.05 times.",
+      "The caveats are real. This is a single preprint, a paper not yet peer reviewed. The comparison is against one baseline in one engine. It measures speed, not model quality, so whether streaming leaves answers unchanged is not shown here. I did not find independent replication. Open questions include how well the scheduler's choices hold up on other hardware, where the link between processor and GPU may be slower, and under traffic patterns the authors did not test."
+     ]
+    },
+    {
+     "headline": "A small network that writes memory directly into a language model's weights, with no training step",
+     "dek": "A November 16, 2026 preprint proposes CLAM, a way to turn past conversations into a compact weight update in one forward pass.",
+     "body": [
+      "<cite index=\"67-1\">On November 16, 2026, Manan Suri and a co-author posted a preprint on long-term memory for language models.</cite> The paper is titled \"Instant Weight-Space Consolidation.\" <cite index=\"67-3\">It introduces CLAM (Carried Latent Adapter Memory).</cite> The idea is to store what the model has learned from past sessions in a small weight update, not in retrieved text.",
+      "Start with the problem. <cite index=\"67-1\">Agentic memory systems extract experience into text and retrieve it at query time, but the model itself does not change.</cite> <cite index=\"67-2\">Fine-tuning on past interactions does change the weights, but it needs backpropagation at serving time and degrades on long histories.</cite> Backpropagation is the gradient computation used to train networks. Recall that a low-rank adapter adds a small correction to a big weight matrix. The correction is the product of two thin matrices:",
+      "\\[ W' = W + BA \\]",
+      "This formula says the adapted weights equal the frozen weights plus a cheap, low-dimensional correction. The symbols are: \\(W\\), the frozen weight matrix, shape \\(4096\\times4096\\) in this illustration; \\(B\\), a \\(4096\\times r\\) matrix; \\(A\\), an \\(r\\times4096\\) matrix; and \\(r\\), the rank. With \\(r=8\\), \\(BA\\) has 2 × 4096 × 8 = 65,536 numbers. The full matrix has 4096² = 16,777,216, so the adapter is 256 times smaller. The sizes are my illustration, not the paper's.",
+      "The intuition is a notebook that rewrites itself. <cite index=\"67-3\">A recurrent hypernetwork, meaning a network that outputs another network's weights, compiles a stream of session activations into a low-rank adapter in a single forward pass. It uses no gradient steps and no language-model generation calls. A complementary episodic buffer supplies verbatim detail at inference time.</cite> <cite index=\"67-4\">A gated latent state carries knowledge across sessions at a fixed size, so the parametric memory accumulates without growing.</cite> A gate is a learned dial between 0 and 1 that decides how much old memory to keep versus overwrite.",
+      "The abstract I could retrieve gives no benchmark numbers, so how well CLAM works is unproven here. Open questions include whether a fixed-size state forgets old facts, how adapters from many sessions interact, and how it compares with plain retrieval. The two-part design suggests the authors expect the compressed weights to capture general knowledge but not exact wording. That is why the verbatim buffer is there."
+     ],
+     "why": "It points to a memory design that sits between retrieved text and slow fine-tuning, and it keeps both serving cost and memory size bounded.",
+     "terms": [
+      {
+       "term": "Low-rank adapter",
+       "def": "A small pair of thin matrices whose product is added to a frozen weight matrix to change the model's behavior cheaply."
+      },
+      {
+       "term": "Hypernetwork",
+       "def": "A network whose output is the weights, or weight updates, of another network."
+      },
+      {
+       "term": "Backpropagation",
+       "def": "The gradient computation that tells each weight how to change during training."
+      },
+      {
+       "term": "Episodic buffer",
+       "def": "A store of exact past snippets that can be read back word for word."
+      },
+      {
+       "term": "Gated latent state",
+       "def": "A fixed-size hidden memory updated through learned 0-to-1 dials that mix old and new information."
+      }
+     ],
+     "sources": [
+      {
+       "title": "Instant Weight-Space Consolidation for Long-Term Memory in LLMs (arXiv:2611.20759)",
+       "url": "https://arxiv.org/abs/2611.20759v1"
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "CLAM turns a stream of session activations into a low-rank weight adapter in one forward pass, with no gradient steps.",
+      "A gated, fixed-size latent state carries knowledge across sessions, and an episodic buffer supplies exact wording.",
+      "The abstract reports no results, so the approach is promising but unverified."
+     ],
+     "deeper": [
+      "On November 16, 2026, Manan Suri and a co-author posted a preprint (a paper shared before peer review) titled \"Instant Weight-Space Consolidation.\" It introduces CLAM, short for Carried Latent Adapter Memory, a way to give a language model long-term memory by changing its weights instead of pasting old text into its prompt. \"Weight space\" just means the space of all the model's numerical parameters.",
+      "Start with two prerequisites. A weight matrix is a grid of learned numbers that transforms a layer's input. A low-rank adapter adds a small correction to a big, frozen weight matrix. The correction is the product of two thin matrices:",
+      "\\[ W' = W + BA \\]",
+      "This says the adapted weights equal the original weights plus a cheap correction. Here \\(W\\) is the frozen weight matrix, shape \\(4096\\times4096\\) in this illustration. \\(B\\) is a \\(4096\\times r\\) matrix, \\(A\\) is an \\(r\\times4096\\) matrix, and \\(r\\) is the rank, the width of the narrow bottleneck between them. With \\(r=8\\), \\(B\\) and \\(A\\) together hold 2 × 4096 × 8 = 65,536 numbers. The full matrix holds 4096² = 16,777,216, so the adapter is 256 times smaller. These sizes are my illustration, not the paper's.",
+      "Now the problem. Agentic memory systems write past experience as text and retrieve it at query time, so the model itself never changes. Fine-tuning on past interactions does change the weights, but it needs backpropagation (the gradient computation used to train networks) while serving, and it degrades on long histories.",
+      "The intuition for CLAM is a notebook that rewrites itself. Instead of filing pages and searching them later, the model's own wiring is nudged to reflect what happened. The mechanism has three parts. First, a hypernetwork, a network whose output is another network's weights, reads a stream of activations (the intermediate numbers a model produces) from each session. It is recurrent, meaning it processes the stream step by step and carries a summary forward. Second, in a single forward pass (one left-to-right computation, with no gradient steps and no calls that make the language model generate text), it emits the low-rank adapter \\(BA\\). Third, a gated latent state carries knowledge from session to session at a fixed size, so the memory accumulates without growing. An episodic buffer, a store of specific past events, supplies verbatim detail at inference time, which is when the model answers queries.",
+      "The gate is a learned dial between 0 and 1. The paper's exact update is not in the abstract I retrieved, so here is the generic form of a gated update:",
+      "\\[ s_t = g \\cdot s_{t-1} + (1-g)\\cdot u_t \\]",
+      "This blends old memory with new information. \\(s_t\\) is the state after session \\(t\\), \\(s_{t-1}\\) is the state before it, \\(u_t\\) is the summary of the new session, and \\(g\\) is the gate. All three are vectors of the same length in practice, and \\(g\\) acts on them elementwise. Here I treat each as a single number.",
+      "Take \\(g=0.75\\), \\(s_{t-1}=0.8\\), and \\(u_t=0.2\\). Then \\(s_t = 0.75\\times0.8 + 0.25\\times0.2 = 0.60 + 0.05 = 0.65\\). The state keeps most of the old value but shifts toward the new one. The state's size never changes, however many sessions pass. These numbers are illustrative only.",
+      "Compared with earlier approaches, CLAM sits between the two. Text memory is exact and easy to inspect, but the model learns nothing and must re-read the retrieved text each time. Fine-tuning changes the model but is costly at serving time. CLAM aims to change weights at roughly the cost of a forward pass. The two-part design suggests the authors expect compressed weights to capture general knowledge but not exact wording, which is why the verbatim buffer exists.",
+      "The abstract gives no benchmark numbers, so how well CLAM works is unproven here. Three questions stand out. Does a fixed-size state forget old facts as new sessions overwrite it? How do adapters from many sessions interact? And does it beat plain retrieval, which is simple and strong?"
+     ]
+    }
+   ]
+  },
+  "training": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "Cheaper to count: when training costs are matched, step-by-step rewards lose to plain answer-only grading",
+     "dek": "A 1,668-run study finds that fine-grained rewards for reasoning steps look better per update but lose once their extra sampling costs are counted.",
+     "body": [
+      "A team led by Vikash Singh posted a paper on arXiv this month titled \"Are Dense Rewards Worth Their Tokens in GRPO?\" <cite index=\"29-5,29-6\">They give every training method the same budget, measured in generated tokens and training hours, and run 1,668 runs on six models. Under that rule, the ranking of methods reverses.</cite>",
+      "Recall how reasoning models are trained. <cite index=\"29-3\">Reinforcement learning with verifiable rewards (RLVR) trains a language model to reason by rewarding correct final answers.</cite> The popular algorithm is group relative policy optimization (GRPO). It samples a group of answers per prompt and compares each one to the group average. <cite index=\"29-4\">Every token of a solution then gets the same credit.</cite> Take four answers with rewards 1, 0, 0, 1. The mean is 0.5 and the standard deviation is 0.5, so the advantages are +1, −1, −1, +1.",
+      "\\[ A_i = \\frac{r_i - \\mu}{\\sigma} \\]",
+      "This equation scores each answer by how much better it did than its siblings. Here \\(A_i\\) is the advantage of answer \\(i\\), \\(r_i\\) is its reward (a single number), \\(\\mu\\) is the mean reward in the group, and \\(\\sigma\\) is the standard deviation of rewards in the group.",
+      "Picture a teacher who only marks the final answer, versus one who marks every line. The second is a dense reward, and it seems obviously better. <cite index=\"29-4\">One version is a Monte-Carlo reward, which scores each step by sampling continuations from it.</cite> But marking every line costs time. <cite index=\"32-6,32-7\">With four continuations at each of five cut points, the continuations alone use 91% of generated tokens. For the same token budget, standard GRPO makes 584 updates and the Monte-Carlo reward makes 50.</cite> Comparing the two per update hides that cost.",
+      "The numbers back this up. <cite index=\"29-7\">On Qwen2.5-1.5B, a small open-weight model, the Monte-Carlo reward leads GRPO per update. It ends 14.3 percentage points lower at equal tokens and 7.8 points lower at equal training time. None of four dense-reward variants beats GRPO, even with as much training time.</cite> One cheaper idea did help a little. <cite index=\"32-12,32-13\">Choosing prompts the model solves about half the time added 1.7 points on Qwen3-0.6B and 0.8 on Qwen2.5-1.5B, but the gain fades at twice the budget. Simply doubling GRPO's learning rate gets within half a point.</cite>",
+      "The caveats matter. <cite index=\"32-14\">The scale is small: models up to 4B parameters, budgets of 8 to 35 million generated tokens, and only the MATH benchmark of competition problems.</cite> The results do not show that dense rewards never help. They show that a method's cost must be counted before its gain is believed."
+     ],
+     "why": "It gives a simple rule for judging reasoning-training tricks: compare them at equal generated tokens and equal hardware time, not equal update counts.",
+     "terms": [
+      {
+       "term": "Reinforcement learning with verifiable rewards (RLVR)",
+       "def": "Training a model with reinforcement learning where an automatic checker confirms whether the final answer is correct."
+      },
+      {
+       "term": "Group relative policy optimization (GRPO)",
+       "def": "An RLVR algorithm that samples several answers per prompt and scores each against the group's average reward."
+      },
+      {
+       "term": "Dense reward",
+       "def": "A reward that varies within one answer, crediting intermediate steps rather than only the final result."
+      },
+      {
+       "term": "Matched compute",
+       "def": "Comparing methods at the same budget of generated tokens and training hours, not the same number of updates."
+      },
+      {
+       "term": "Advantage",
+       "def": "How much better an answer scored than the group average, used to weight its learning signal."
+      }
+     ],
+     "sources": [
+      {
+       "title": "Are Dense Rewards Worth Their Tokens in GRPO? (arXiv)",
+       "url": "https://arxiv.org/abs/2611.13560"
+      },
+      {
+       "title": "Matched-Compute RL, Byte-Level Models, and Faster Sparse Attention (The Salt)",
+       "url": "https://thesalt.substack.com/p/matched-compute-rl-byte-level-models"
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "GRPO gives every token in an answer the same credit, based on how the answer compares with its group.",
+      "Step-by-step rewards win per update but lose per token and per training hour, because sampling continuations eats about 91% of the tokens.",
+      "Judge reinforcement learning tricks at matched compute, and note that this study covers only small models and one math benchmark."
+     ],
+     "deeper": [
+      "Start with the setting. A language model writes text one token at a time, where a token is a word or word fragment. Reinforcement learning (RL) improves a model by letting it try answers and nudging it toward the ones that earn reward. Reinforcement learning with verifiable rewards (RLVR) applies this to reasoning: the model earns reward when its final answer can be checked and is correct. The popular method is group relative policy optimization (GRPO). For each prompt it samples a group of answers and compares each one to the group's average.",
+      "Picture a teacher who marks only the final answer, versus one who marks every line of working. Under GRPO, every token in a solution gets the same credit, because only the end is graded. The line-by-line teacher gives a dense reward, meaning feedback on intermediate steps. That seems obviously better, because it says where a solution went wrong.",
+      "The catch is how the line-by-line marks are produced. One version is a Monte-Carlo reward. To score a step, you stop the solution there and sample several continuations, which are fresh attempts to finish from that point. You then see how often they reach the right answer. That is a grade by repeated trial, and every trial costs generated tokens.",
+      "The GRPO arithmetic is simple. Take four answers with rewards 1, 0, 0, 1:",
+      "\\[ A_i = \\frac{r_i - \\mu}{\\sigma} \\]",
+      "This scores each answer by how much better it did than its siblings, in units of the group's spread. Here \\(A_i\\) is the advantage of answer \\(i\\), a single number that is positive when the answer beat the group. \\(r_i\\) is that answer's reward, a single number. \\(\\mu\\) is the mean reward over the group. \\(\\sigma\\) is the standard deviation, which measures how far rewards typically sit from the mean. The mean is 0.5 and the standard deviation is 0.5. So the advantages are +1, −1, −1, +1: correct answers are pushed up and wrong ones pushed down.",
+      "The paper by Vikash Singh and colleagues, \"Are Dense Rewards Worth Their Tokens in GRPO?\", posted on the arXiv preprint server, asks what this costs. Earlier work compared methods per update, meaning per adjustment of the model's weights. The team instead gave every method the same budget of generated tokens and training hours. They ran 1,668 runs on six models.",
+      "Counting cost changes the picture. With four continuations at each of five cut points, continuations use 91% of all generated tokens. At the same token budget, standard GRPO makes 584 updates and the Monte-Carlo reward makes 50. As a rough check, 9% of the budget left for the main answers gives about 0.09 × 584 ≈ 53 updates, close to 50. The dense method learns more per update but gets about twelve times fewer of them.",
+      "On Qwen2.5-1.5B, a small open-weight model (its trained weights are public), the Monte-Carlo reward leads per update. At equal tokens it ends 14.3 percentage points lower in accuracy. At equal training time it ends 7.8 points lower. None of four dense-reward variants beats GRPO, even given as much training time.",
+      "This is a change from earlier comparisons, which flattered the dense methods by hiding their sampling cost. One cheaper idea helped a little. It chooses prompts the model solves about half the time, since prompts that are always solved or never solved give all-equal rewards and zero advantage. That added 1.7 points on Qwen3-0.6B, a smaller model, and 0.8 on Qwen2.5-1.5B. The gain fades at twice the budget. Simply doubling GRPO's learning rate, the step size of each weight update, gets within half a point.",
+      "The caveats matter. The models reach only 4B parameters, where parameters are the model's learned numbers. Budgets run from 8 to 35 million generated tokens. Only the MATH benchmark of competition problems is used. Dense rewards may pay off for longer reasoning chains, harder tasks, or cheaper ways of scoring steps. The paper does not show that dense rewards never help. It shows that a method's cost must be counted before its gain is believed."
+     ]
+    },
+    {
+     "headline": "A small model learns from a closed one by asking it questions mid-task",
+     "dek": "A new distillation method lets a student consult a stronger model that only returns text, then trains the student to succeed without help.",
+     "body": [
+      "On about November 18, a team led by Lirui Luo posted \"Communicative On-Policy Distillation\" to arXiv. <cite index=\"58-2,58-3\">Conventional on-policy distillation needs the teacher's logits, which text-only black-box models do not expose. The new method, COPD, instead uses natural-language communication to pass a stronger model's skill to a smaller student.</cite>",
+      "Recall the older idea. Distillation trains a small student to imitate a larger teacher. <cite index=\"47-1\">On-policy distillation (OPD) applies reverse-KL supervision on the student's own rollouts.</cite> A rollout is one full attempt at a task. Kullback–Leibler (KL) divergence measures how far one probability distribution is from another. Logits are the raw scores a model gives each possible next token. Training on the student's own attempts means it is corrected where it actually goes wrong.",
+      "\\[ \\mathcal{L}(\\theta) = \\mathbb{E}_{y \\sim \\pi_\\theta} \\sum_t D_{\\mathrm{KL}}\\big(\\pi_\\theta(\\cdot \\mid x, y_{<t}) \\,\\|\\, \\pi_{\\mathrm{teacher}}(\\cdot \\mid x, y_{<t})\\big) \\]",
+      "The loss pulls the student's next-token distribution toward the teacher's at every step of the student's own attempt. Here \\(\\theta\\) is the student's parameters, \\(x\\) is the task prompt, \\(y_{<t}\\) is the tokens generated so far, and \\(\\pi_\\theta\\) and \\(\\pi_{\\mathrm{teacher}}\\) are the next-token distributions over the vocabulary. For one step, suppose the student gives (0.8, 0.2) and the teacher (0.5, 0.5). Then KL is 0.8·ln(1.6) + 0.2·ln(0.4) ≈ 0.376 − 0.183 = 0.193 nats. A closed model gives no such distribution, which is the problem COPD solves.",
+      "Think of an apprentice who may phone an expert, then practices alone. <cite index=\"60-5\">The student decides when to consult the black-box teacher in natural language mid-task. It stores the successful exchanges as privileged reference material. It then does on-policy self-distillation plus task-reward reinforcement learning.</cite> <cite index=\"58-7\">The self-teacher is conditioned on task-verified successful trajectories gathered through that free-form communication.</cite> <cite index=\"40-4\">Those references supervise fresh student rollouts that have no adviser.</cite> The teacher is the same model, but it can see the reference. The student must reproduce that behavior without seeing it.",
+      "The authors report solid gains. <cite index=\"58-1\">Across five long-horizon domains, COPD substantially improves adviser-free performance over existing black-box distillation methods. The gains transfer to Terminal-Bench 2.1 and SWE-Bench Pro V2.</cite> <cite index=\"58-4\">On one domain, CAMG-II, COPD achieves 2.46 times the gain of the strongest black-box OPD baseline.</cite>",
+      "Several things remain unclear. A ratio of gains hides the absolute scores. I could not confirm which adviser or student models were used from the sources I read. The paper is a new preprint without independent replication. The method also relies on tasks with a verifier that confirms success."
+     ],
+     "why": "Many of the strongest models are reachable only through text, so a way to distill from them without access to their probabilities widens what small-model training can use.",
+     "terms": [
+      {
+       "term": "On-policy distillation (OPD)",
+       "def": "Training a student on its own generated attempts, with a teacher giving feedback at each token."
+      },
+      {
+       "term": "Communicative On-Policy Distillation (COPD)",
+       "def": "The new method in which the student consults a black-box teacher in natural language and learns from the successful exchanges."
+      },
+      {
+       "term": "Kullback–Leibler (KL) divergence",
+       "def": "A measure of how different one probability distribution is from another; zero means identical."
+      },
+      {
+       "term": "Reinforcement learning (RL)",
+       "def": "Training a model by rewarding good outcomes from its own attempts instead of copying labeled examples."
+      },
+      {
+       "term": "Logits",
+       "def": "The raw scores a language model assigns to each possible next token, before conversion to probabilities."
+      }
+     ],
+     "sources": [
+      {
+       "title": "Communicative On-Policy Distillation (arXiv PDF)",
+       "url": "https://arxiv.org/pdf/2611.23673"
+      },
+      {
+       "title": "The GRPO Threshold Nobody Talks About — And Other Post-Training Recipes Worth Stealing (DEV Community)",
+       "url": "https://dev.to/felipe0liveira/the-grpo-threshold-nobody-talks-about-and-other-post-training-recipes-worth-stealing-3lml"
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "On-policy distillation corrects a student on its own attempts, but it normally needs the teacher's token probabilities.",
+      "COPD lets the student ask a text-only teacher for help, keeps the verified successes, and trains the student to reproduce them without help.",
+      "It reports 2.46 times the gain of the best black-box baseline on one domain, but it is a new preprint with no independent replication."
+     ],
+     "deeper": [
+      "On about November 18, a team led by Lirui Luo posted \"Communicative On-Policy Distillation\" to arXiv, a public server where researchers post papers before peer review. Such a paper is called a preprint. The method, called COPD, lets a small model learn from a stronger model that it can only talk to in plain text.",
+      "Start with the prerequisites. Distillation trains a small student model to imitate a larger teacher. A rollout is one full attempt at a task. Logits are the raw scores a model assigns to each possible next token. Applying the softmax function to logits gives a probability distribution over the vocabulary. Kullback–Leibler (KL) divergence measures how far one distribution is from another. On-policy distillation (OPD) samples rollouts from the student and corrects the student at each step of those rollouts. This way the student is corrected where it actually goes wrong, not where the teacher would have gone. A black-box model exposes only its text output, not its logits. That rules out ordinary OPD.",
+      "For intuition, picture an apprentice who may phone an expert mid-job and then practices alone. In COPD, the student decides when to consult the closed teacher, which here plays the adviser, in natural language. When a task ends in verified success, the student stores that exchange as privileged reference material. \"Privileged\" means available in training but not at test time. Then comes a second phase. The student attempts fresh tasks with no adviser. A copy of itself that can see the stored reference acts as the teacher. The student is trained to behave as that informed copy would, without seeing the reference. This self-distillation is combined with reinforcement learning (RL), which strengthens behavior in proportion to a task reward.",
+      "Now the mathematics. Standard OPD minimizes",
+      "\\[ \\mathcal{L}(\\theta) = \\mathbb{E}_{y \\sim \\pi_\\theta} \\sum_t D_{\\mathrm{KL}}\\big(\\pi_\\theta(\\cdot \\mid x, y_{<t}) \\,\\|\\, \\pi_{\\mathrm{teacher}}(\\cdot \\mid x, y_{<t})\\big). \\]",
+      "The loss pulls the student's next-token distribution toward the teacher's at every step of the student's own attempt. Here \\(\\theta\\) is the student's parameters, and \\(x\\) is the task prompt. The symbol \\(y\\) is a sampled attempt, and \\(y_{<t}\\) is its tokens before position \\(t\\). The expectation \\(\\mathbb{E}\\) averages over attempts drawn from the student's policy \\(\\pi_\\theta\\). Both \\(\\pi_\\theta\\) and \\(\\pi_{\\mathrm{teacher}}\\) are vectors with one probability per vocabulary token. The KL term itself is",
+      "\\[ D_{\\mathrm{KL}}(p \\,\\|\\, q) = \\sum_v p(v)\\,\\ln\\frac{p(v)}{q(v)}. \\]",
+      "This weights each token's log-ratio by how likely the student is to produce it. So it punishes the student for putting probability where the teacher does not. Here \\(p\\) is the student's distribution, \\(q\\) is the teacher's, and \\(v\\) indexes vocabulary tokens. The result is in nats, because the logarithm is natural.",
+      "A small example uses two tokens. The student gives (0.8, 0.2) and the teacher gives (0.5, 0.5). Then KL is 0.8·ln(1.6) + 0.2·ln(0.4) ≈ 0.376 − 0.183 = 0.193 nats. A closed model supplies no \\(\\pi_{\\mathrm{teacher}}\\), which is the obstacle. COPD keeps the same loss shape but swaps in the self-teacher \\(\\pi_\\theta(\\cdot \\mid x, r, y_{<t})\\). Here \\(r\\) is the stored successful reference, a block of text. The student's own distribution is the one without \\(r\\).",
+      "Compared with earlier approaches, ordinary OPD needs logits. Black-box distillation methods typically imitate the teacher's text outputs, which are fixed and not tied to the student's own mistakes. COPD keeps the on-policy property while using only text. The authors report that across five long-horizon domains, meaning tasks needing many sequential steps, COPD substantially improves performance without an adviser over existing black-box distillation methods. The gains transfer to Terminal-Bench 2.1, a benchmark of command-line tasks, and SWE-Bench Pro V2, a benchmark of software-engineering tasks. On one domain, CAMG-II, COPD achieves 2.46 times the gain of the strongest black-box OPD baseline.",
+      "Several things remain unclear. A ratio of gains hides absolute scores: 2.46 times a small gain is still small. I could not confirm which adviser or student models were used from the sources I read. The paper is a new preprint without independent replication. The method also depends on a verifier, a program that confirms a task succeeded. Without one, the student cannot decide which exchanges to store."
+     ]
+    }
+   ]
+  },
+  "theory": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "A scaling-law curve can fit well and still give the wrong advice for tabular models",
+     "dek": "A 18 November study of table-prediction foundation models finds that a good curve fit does not guarantee good guidance on how to spend compute on new datasets.",
+     "body": [
+      "On 18 November 2026, Johannes Hog and six co-authors posted \"Towards Reliable Scaling Laws for Tabular Foundation Models.\" <cite index=\"4-3\">They test whether scaling laws for TabPFNv2-style models extrapolate to larger compute budgets and carry across evaluation settings.</cite> TabPFNv2 is a pretrained transformer that predicts labels for a new table. The paper's main message is a warning: <cite index=\"4-4\">fitting a scaling law accurately does not necessarily yield reliable prescriptions on unseen datasets.</cite>",
+      "Recall that a scaling law is a curve fitted to the results of small, cheap training runs. You use it to predict how a big, expensive run will turn out. A common form is \\[ L(C) = a\\,C^{-b} + c. \\] This says loss falls as a power of compute, down to a floor. Here \\(L\\) is the predicted loss (a scalar), \\(C\\) is training compute, \\(a\\) is a scale constant, \\(b\\) is the exponent that sets the speed of improvement, and \\(c\\) is the loss that no amount of compute removes. As an illustration (not from the paper), with \\(b = 0.1\\), doubling compute multiplies the reducible part of the loss by \\(2^{-0.1} \\approx 0.93\\). A tabular foundation model is pretrained on many synthetic tables, which are generated by a program. It then predicts on a real table in one forward pass, with no weight updates.",
+      "Think of it as testing a bigger engine only on short tracks. The curve will look smooth, but it says nothing about long ones. The authors probe this gap in two ways. First, they compare scaling on synthetic data with scaling on real-world data and find that <cite index=\"4-4\">the two behave differently.</cite> Second, they check whether a fitted law gives sound compute-allocation advice on datasets it never saw. Their remedy is to add a third axis. <cite index=\"4-5\">Compute-optimal scaling requires expanding the range of synthetic pretraining dataset sizes alongside model size and training compute.</cite> In practice, <cite index=\"4-6\">raising the maximum number of rows and features sampled during pretraining improves performance and produces more predictable scaling trends.</cite>",
+      "The abstract does not give headline numbers, so the size of the forecasting errors is unclear. The result is also limited to TabPFNv2-style models. It may not hold for other tabular architectures or for much larger budgets. The practical lesson is still clear. Judge a scaling law by how well its advice works on held-out datasets, not by how closely it matches the points it was fitted to. For anyone planning a large pretraining run, that is a stricter test than a low fitting error."
+     ],
+     "why": "It shows that validating a scaling law on held-out tasks matters more than a tight fit, which affects how labs budget large pretraining runs.",
+     "terms": [
+      {
+       "term": "Scaling law",
+       "def": "A curve, usually a power law, fitted to small-run results to predict the loss of a larger run."
+      },
+      {
+       "term": "Tabular foundation model",
+       "def": "A model pretrained on many synthetic tables that predicts labels for a new table without per-table training."
+      },
+      {
+       "term": "TabPFNv2",
+       "def": "A pretrained transformer for table prediction; the paper studies models built in its style."
+      },
+      {
+       "term": "Compute-optimal",
+       "def": "The split of a fixed compute budget between model size and data that gives the lowest loss."
+      },
+      {
+       "term": "Extrapolate",
+       "def": "To predict outside the range of the data the curve was fitted on."
+      }
+     ],
+     "sources": [
+      {
+       "title": "Towards Reliable Scaling Laws for Tabular Foundation Models (arXiv:2611.24214)",
+       "url": "https://arxiv.org/abs/2611.24214"
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "A scaling law that fits its training points well can still give bad compute advice on new datasets.",
+      "For tabular foundation models, the range of synthetic pretraining dataset sizes is a scaling axis alongside model size and compute.",
+      "Raising the maximum rows and features sampled during pretraining made trends more predictable, but only for TabPFNv2-style models."
+     ],
+     "deeper": [
+      "A scaling law is a curve fitted to the results of small, cheap training runs, then used to predict a big, expensive run. Loss is a number that measures how wrong the model's predictions are, so lower is better. Extrapolating means trusting the curve beyond the range of the points it was fitted to. The paper \"Towards Reliable Scaling Laws for Tabular Foundation Models,\" posted on 18 November 2026 by Johannes Hog and six co-authors, asks whether that trust is earned for TabPFNv2-style models. TabPFNv2 is a transformer, a network built from attention layers, that is pretrained to predict labels for a new table.",
+      "Here is the setting. A tabular foundation model is pretrained on many synthetic tables, which a program generates. At test time it reads a real table, with its labeled rows and unlabeled query rows, and predicts in a single forward pass. A forward pass is one run of the data through the network, and no weights are updated. Think of testing a bigger engine only on short tracks. The curve will look smooth, but it says nothing about long tracks.",
+      "The common law has this form:",
+      "\\[ L(C) = a\\,C^{-b} + c. \\]",
+      "It says loss falls as a power of compute until it hits a floor. Here \\(L\\) is the predicted loss (a scalar), \\(C\\) is training compute (a positive scalar), \\(a\\) is a scale constant, \\(b\\) is the exponent that sets how fast loss improves, and \\(c\\) is the floor that no compute removes. Subtracting the floor and taking logarithms gives a straight line:",
+      "\\[ \\log(L - c) = \\log a - b\\,\\log C. \\]",
+      "This says that on log axes the reducible loss drops in proportion to the log of compute. The symbols are the same as above, and \\(\\log\\) is the natural logarithm. The slope is \\(-b\\).",
+      "A small illustration, not from the paper: let \\(b = 0.1\\), \\(a = 0.4\\), \\(c = 0.2\\), and \\(C = 1\\) in some unit. Then \\(L = 0.4 + 0.2 = 0.6\\). Doubling compute multiplies the reducible part by \\(2^{-0.1} \\approx 0.93\\). After ten doublings, compute is \\(1024\\) times larger, and the multiplier is \\(2^{-1} = 0.5\\). The reducible part is now \\(0.2\\), so \\(L = 0.4\\). Now suppose real tables have a higher floor or a smaller exponent than the synthetic ones. The same curve would then promise gains that never arrive.",
+      "The paper's central warning is that fitting a scaling law accurately does not necessarily give reliable prescriptions on unseen datasets. A prescription is advice, such as how to split a fixed budget between model size and training length. The authors probe this in two ways. First, they compare scaling on synthetic data with scaling on real-world data and find that the two behave differently. Second, they check whether a fitted law gives sound allocation advice on datasets it never saw.",
+      "Their remedy is a third axis. Compute-optimal scaling means choosing the best split of a fixed budget. The paper reports that it requires widening the range of synthetic pretraining dataset sizes, alongside model size and training compute. In practice, raising the maximum number of rows and features sampled during pretraining improves performance and makes scaling trends more predictable. The intuition is that if pretraining only shows the model small tables, the curve describes small tables. Real tables are often bigger.",
+      "This differs from the usual language-model recipe. There, laws relate loss to two quantities, parameters and training tokens, and the data is a fixed real corpus. In tabular pretraining the data is generated, so its size and shape are design choices. They become a scaling variable in their own right. Earlier practice also tended to judge a law by how closely it matched its fitted points. This paper judges it by how well its advice works on held-out datasets, meaning datasets kept out of the fitting.",
+      "The limits matter. The abstract gives no headline numbers, so the size of the forecasting errors is unclear. The result is limited to TabPFNv2-style models. It may not hold for other tabular architectures or for much larger budgets. The practical lesson still stands. For anyone planning a large pretraining run, a low fitting error is not enough. The stricter test is whether the law's advice holds up on datasets it has never seen."
+     ]
+    },
+    {
+     "headline": "New generalization bounds link sparse networks to both classic weight-size theory and parameter counting",
+     "dek": "A paper accepted at a major conference derives guarantees for deep networks whose weights are mostly near zero, bridging two older ways of measuring complexity.",
+     "body": [
+      "On 14 November 2026, Nong Minh Hieu and Antoine Ledent posted \"Generalization Bounds for Neural Networks with Sparse Connectivity.\" <cite index=\"31-6\">The 61-page paper is accepted at NeurIPS 2026</cite> (Neural Information Processing Systems, a major machine-learning conference). It starts from a familiar observation: <cite index=\"31-2\">large networks rarely use all their parameters, and learned solutions are often markedly sparse.</cite> The authors argue that <cite index=\"31-3\">existing generalization theory only partly explains how this sparsity affects statistical performance.</cite>",
+      "Recall that the generalization gap is the difference between a model's error on new data and its error on training data. A generalization bound is a mathematical ceiling on that gap. Two classic ceilings exist. Norm-based bounds say the gap is small if the weights have small total size. Parameter-counting bounds say the gap is small if there are few weights. Neither fits a network with many parameters where most are nearly zero.",
+      "Picture two budgets. One caps how big the weights are. The other caps how many are nonzero. A sparse network respects both loosely, so the paper uses a measure that blends them. <cite index=\"31-4\">The authors bound the gap for deep networks whose layer-wise weight matrices are constrained by an \\(\\ell_p\\) quasi-norm with \\(0<p\\leq 1\\).</cite> For a weight vector \\(w\\), \\[ \\|w\\|_p = \\Big(\\sum_i |w_i|^p\\Big)^{1/p}. \\] This formula adds up each weight's magnitude raised to the power \\(p\\), then takes a root. Smaller \\(p\\) punishes spread-out weights more than concentrated ones. Here \\(w\\) is a vector of weights, \\(w_i\\) is its \\(i\\)-th entry, and \\(p\\) is a number up to 1. Take \\(A=(2,0,0,0)\\) and \\(B=(0.5,0.5,0.5,0.5)\\). At \\(p=1\\) both score 2. At \\(p=1/2\\), \\(A\\) scores \\((\\sqrt{2})^2 = 2\\). \\(B\\) scores \\((4\\sqrt{0.5})^2 = 8\\). The sparse vector gets the smaller complexity. The result <cite index=\"31-5\">interpolates between classical norm-based guarantees and parameter-counting bounds.</cite>",
+      "The caveats are significant. This is a theory paper, and I could only see its abstract. It does not report how tight the bounds are on real trained networks. It also does not show whether trained models actually satisfy the \\(\\ell_p\\) constraint at useful values of \\(p\\). Bounds of this kind are often loose. Their value is in showing which quantities matter. Here the answer is the shape of each weight matrix's magnitude distribution, not just the total size or parameter count. Checking whether that predicts real generalization is the next step."
+     ],
+     "why": "It gives theory a way to credit the sparsity that trained networks actually show, instead of relying on measures that ignore it.",
+     "terms": [
+      {
+       "term": "Generalization gap",
+       "def": "Test error minus training error; how much worse a model does on unseen data."
+      },
+      {
+       "term": "Quasi-norm",
+       "def": "A size measure like a norm, but with p below 1 it breaks the triangle inequality and favors sparse vectors."
+      },
+      {
+       "term": "Sparse connectivity",
+       "def": "A network in which most weights are zero or near zero."
+      },
+      {
+       "term": "NeurIPS",
+       "def": "Neural Information Processing Systems, a major annual machine-learning conference."
+      },
+      {
+       "term": "Non-asymptotic bound",
+       "def": "A guarantee that holds for finite sample sizes, not only in the limit of infinite data."
+      }
+     ],
+     "sources": [
+      {
+       "title": "Generalization Bounds for Neural Networks with Sparse Connectivity (arXiv:2611.19382)",
+       "url": "https://arxiv.org/abs/2611.19382"
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "A generalization bound caps the gap between training error and error on new data.",
+      "This paper bounds that gap for networks whose weight matrices are constrained by an \\(\\ell_p\\) quasi-norm with p at most 1, which rewards sparsity.",
+      "The bound bridges norm-based and parameter-counting theory, but its tightness on real networks is not shown in the abstract."
+     ],
+     "deeper": [
+      "Start with the prerequisites. A parameter is a number the network learns, and in this setting the parameters are mostly weights. A weight matrix holds the weights connecting one layer to the next. A network is sparse when most of its weights are zero or nearly zero. The generalization gap is the difference between a model's error on new data and its error on training data:",
+      "\\[ \\text{gap}(f) = L_{\\text{test}}(f) - L_{\\text{train}}(f). \\]",
+      "This says how much the model flatters itself on data it has already seen. Here \\(f\\) is the trained network, \\(L_{\\text{test}}(f)\\) is its average error on fresh data (a single number), and \\(L_{\\text{train}}(f)\\) is its average error on the training set (also a single number). A generalization bound is a mathematical ceiling on this gap.",
+      "Now the intuition. Imagine a student who may memorize answers. Two rules can limit memorization. One caps how much total \"ink\" the student may use. The other caps how many pages they may write on. Norm-based bounds are the ink rule: the gap is small if the weights have small total size. A norm is a rule that turns a vector into a single size. Parameter-counting bounds are the page rule: the gap is small if there are few weights. A sparse network is awkward for both. It may have huge numbers of weights, so the page rule is useless. Yet most are near zero, so the ink rule ignores that the surviving weights are few.",
+      "On 14 November 2026, Nong Minh Hieu and Antoine Ledent posted \"Generalization Bounds for Neural Networks with Sparse Connectivity.\" It is accepted at Neural Information Processing Systems (NeurIPS), a major machine-learning conference. Their idea is to measure each layer's weight matrix with a quantity that sits between the two rules. They constrain each layer by an \\(\\ell_p\\) quasi-norm with \\(0<p\\leq 1\\). A quasi-norm is a size measure that relaxes one norm axiom, the triangle inequality, which says the size of a sum is at most the sum of the sizes.",
+      "For a weight vector \\(w\\):",
+      "\\[ \\|w\\|_p = \\Big(\\sum_i |w_i|^p\\Big)^{1/p}. \\]",
+      "This adds up each weight's magnitude raised to the power \\(p\\), then takes a root. Because \\(p\\) is small, many tiny weights add up to far more than one large weight does. Here \\(w\\) is a vector of weights, \\(w_i\\) is its \\(i\\)-th entry (a real number), \\(|w_i|\\) is its absolute value, and \\(p\\) is a fixed number with \\(0<p\\leq 1\\). At \\(p=1\\) this is the ordinary sum of magnitudes, a classic norm. As \\(p\\) shrinks toward 0, each nonzero term approaches 1, so the sum approaches the count of nonzero weights. That is the page rule. So \\(p\\) acts as a dial from \"total size\" to \"number of weights.\"",
+      "A small example shows the effect. Take \\(A=(2,0,0,0)\\) and \\(B=(0.5,0.5,0.5,0.5)\\). At \\(p=1\\), both score 2, so the ink rule cannot tell them apart. At \\(p=1/2\\), \\(A\\) scores \\((\\sqrt{2})^2 = 2\\). \\(B\\) scores \\((4\\sqrt{0.5})^2 = 8\\). The sparse vector gets the smaller complexity, which matches the intuition that concentrated weights are simpler.",
+      "The paper's result is a bound on the gap for deep networks whose layer-wise weight matrices satisfy such an \\(\\ell_p\\) constraint. It interpolates between classical norm-based guarantees and parameter-counting bounds. I could only see the abstract, so I cannot give the exact formula or say how the bound depends on depth or width.",
+      "Compared with earlier work, the novelty is the middle ground. Norm-based bounds treat the example vectors \\(A\\) and \\(B\\) at \\(p=1\\) as equal. Parameter counting treats a dense network of tiny weights as huge. The \\(\\ell_p\\) view responds to the shape of the magnitude distribution: how much weight mass sits in a few entries versus spread across many.",
+      "The caveats are significant. This is a theory paper. The abstract does not report how tight the bounds are on real trained networks. It also does not show that trained models satisfy the \\(\\ell_p\\) constraint at useful values of \\(p\\). Bounds of this kind are often loose, so their value lies in showing which quantities matter, not in predicting exact test error. The open question is empirical. Do measured \\(\\ell_p\\) quantities of trained networks track their real generalization better than total norms or parameter counts do? That check is the natural next step."
+     ]
+    }
+   ]
+  },
+  "practice": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "Shrinking the small model's memory: 4-bit notes for speculative decoding save a quarter of cache memory but not yet time",
+     "dek": "A workshop paper compresses only the draft model's working memory in speculative decoding. It shows that how you round keys matters more than how many bits you give them.",
+     "body": [
+      "On November 16, Saksham Gupta and Michael Li of Carnegie Mellon University posted a paper on a hidden cost of speculative decoding. <cite index=\"2-3\">The technique keeps two key-value caches, one for the large target model and one for the small draft model.</cite> They shrink only the draft model's cache. <cite index=\"2-5\">The target cache and verifier stay in BF16 (brain floating point, a 16-bit number format), so the final output rule is untouched.</cite> <cite index=\"2-10\">The paper was accepted at a NeurIPS 2026 efficiency workshop.</cite>",
+      "Recall that speculative decoding works like a junior writing a draft and a senior checking it. The small draft model guesses several next tokens, and the large target model checks them all in one pass. The fraction of guesses the target accepts is the acceptance rate. Recall also that a key-value (KV) cache stores each earlier token's attention keys and values so they are not recomputed. It grows with context length and batch size, and with two models you pay for it twice.",
+      "Think of the draft cache as rough pencil notes: they need not be exact, only good enough to keep the guesses useful. Quantization stores each number as a small integer plus a shared scale and offset. In symbols, \\[ q = \\operatorname{round}\\!\\left(\\frac{x - z}{s}\\right), \\qquad \\hat{x} = s\\,q + z \\] This maps a real number to one of a few integer levels and back. Here x is the original value, z is the group's minimum (the offset), s is the step size, q is the stored integer, and \\(\\hat{x}\\) is the reconstruction. With 4 bits there are 16 levels. For values spanning 0 to 3.0, s = 3.0/15 = 0.2. A value x = 1.23 gives q = round(6.15) = 6 and \\(\\hat{x}\\) = 1.2. The authors' K4V4 scheme uses 4 bits for keys and 4 for values. Keys get a separate scale per channel, meaning per feature dimension, and values get one per token. They follow the earlier KIVI method here, because <cite index=\"32-2\">key tensors carry large outliers in a few fixed channels.</cite>",
+      "The central finding is that the layout matters more than the bit split. <cite index=\"30-3,30-4\">With a naive per-token quantizer, giving keys 8 bits and values 4 beat the reverse by 10.87 percentage points of acceptance. With grouped per-channel keys, that gap became −0.25.</cite> So keys were not inherently more sensitive. The naive rounding was hurting them. <cite index=\"3-5\">Across six model pairs, K4V4 cut draft cache bytes by 66.20% and combined target-plus-draft memory by 23.95%.</cite> <cite index=\"2-2\">Mean acceptance fell from 57.93% to 57.14%.</cite>",
+      "The caveat is speed. <cite index=\"3-8\">In an end-to-end prototype, packed K4V4 was 18% to 33% slower than BF16 speculative decoding, which was itself slower than target-only decoding.</cite> The speed cost presumably comes from unpacking 4-bit values in the kernel, but the paper's savings are in memory only. The tests also used small models, such as a Qwen2.5 3B/1.5B pair at up to 32K context. Whether fast kernels can make this pay off in real serving is unproven."
+     ],
+     "why": "It shows that the best precision split for key-value cache compression depends on the quantizer's layout, and that saved memory only counts once the kernels are fast.",
+     "terms": [
+      {
+       "term": "Speculative decoding",
+       "def": "A way to speed up generation in which a small draft model guesses several tokens and a large model verifies them in a single pass."
+      },
+      {
+       "term": "Key-value (KV) cache",
+       "def": "Stored attention keys and values of earlier tokens, kept so the model does not recompute them for each new token."
+      },
+      {
+       "term": "BF16",
+       "def": "Brain floating point 16, a 16-bit number format with the same range as 32-bit floats but lower precision."
+      },
+      {
+       "term": "K4V4",
+       "def": "Storing the key cache and the value cache each in 4 bits per number."
+      },
+      {
+       "term": "Acceptance rate",
+       "def": "The share of the draft model's guessed tokens that the large model accepts as correct."
+      }
+     ],
+     "sources": [
+      {
+       "title": "Memory-Efficient Speculative Decoding with Quantized Draft KV Cache (arXiv abstract)",
+       "url": "https://arxiv.org/abs/2611.20565"
+      },
+      {
+       "title": "Memory-Efficient Speculative Decoding with Quantized Draft KV Cache (arXiv HTML)",
+       "url": "https://arxiv.org/html/2611.20565"
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "Speculative decoding stores two key-value caches, and 4-bit rounding of the small model's cache alone cut combined cache memory by about 24% on average.",
+      "Giving keys more bits looked better only because of a naive rounding scheme. Per-channel key scales erased the gap.",
+      "The prototype was slower, so the memory savings have not yet become a speed or cost win."
+     ],
+     "deeper": [
+      "Speculative decoding works like a junior writing a draft and a senior checking it. A small draft model guesses several next tokens (a token is a word or word piece), and the large target model checks all of them in one pass. The fraction of guesses the target accepts is the acceptance rate. Each model also keeps a key-value (KV) cache. Recall that attention lets each new token look back at earlier ones, and the cache stores each earlier token's keys and values so they are not recomputed. It grows with context length and with batch size, the number of requests served together. With two models, you pay for it twice.",
+      "On November 16, Saksham Gupta and Michael Li of Carnegie Mellon University posted a paper on shrinking only the draft model's cache. The target cache and verifier stay in brain floating point (BF16), a 16-bit number format, so the final output rule is untouched. The paper was accepted at a workshop of the Neural Information Processing Systems (NeurIPS) conference, a major machine learning venue.",
+      "Think of the draft cache as rough pencil notes. They need not be exact, only good enough to keep the guesses useful. The tool is quantization: store each number as a small integer, plus a shared step size and offset for a group of numbers. Here is the mapping:",
+      "\\[ q = \\operatorname{round}\\!\\left(\\frac{x - z}{s}\\right), \\qquad \\hat{x} = s\\,q + z \\]",
+      "This snaps a real number onto one of a few evenly spaced levels and then maps it back. Here x is the original value (a scalar), z is the group's minimum (the offset), s is the step size, q is the stored integer, and \\(\\hat{x}\\) is the reconstruction, the approximate value we get back. The step size comes from the group's range:",
+      "\\[ s = \\frac{x_{\\max} - x_{\\min}}{2^{b} - 1} \\]",
+      "This spreads the range evenly across all available levels. Here \\(x_{\\max}\\) and \\(x_{\\min}\\) are the group's largest and smallest values, and b is the number of bits. With b = 4 there are 16 levels, so the denominator is 15.",
+      "A small example: take values spanning 0 to 3.0, so z = 0. Then s = 3.0/15 = 0.2. A value x = 1.23 gives q = round(6.15) = 6, and \\(\\hat{x}\\) = 0.2 × 6 = 1.2. The error is 0.03. Rounding can never miss by more than half a step, here 0.1.",
+      "The authors' K4V4 scheme uses 4 bits for keys and 4 for values. The grouping differs. Keys get one scale per channel, meaning per feature dimension, and values get one per token. This follows an earlier method called KIVI, which compresses the KV cache the same way. The reason is that key tensors carry large outliers in a few fixed channels. A per-token scale would let one outlier stretch the step size for everything in that token, wasting levels on the ordinary values.",
+      "The central finding is that layout matters more than the bit split. With a naive per-token quantizer, giving keys 8 bits and values 4 beat the reverse by 10.87 percentage points of acceptance. With grouped per-channel keys, that gap became −0.25. So keys were not inherently more sensitive. The naive rounding was hurting them.",
+      "Across six model pairs, K4V4 cut draft cache bytes by 66.20% and combined target-plus-draft memory by 23.95%, nearly a quarter. Mean acceptance fell from 57.93% to 57.14%, a drop of 0.79 points. Compared with earlier work, the idea is not new low-bit cache compression. KIVI-style methods target a single model's cache. This paper applies the idea to the cheaper, less critical half of a speculative pair, where errors cost only some acceptance, not output quality.",
+      "The caveat is speed. In an end-to-end prototype, packed K4V4 was 18% to 33% slower than BF16 speculative decoding, which was itself slower than target-only decoding. The cost presumably comes from unpacking 4-bit values inside the kernel, the small program that runs on the graphics processor. The paper's savings are in memory only.",
+      "The tests also used small models, such as a Qwen2.5 3B/1.5B pair (a family of open language models, here with 3 billion and 1.5 billion parameters) at up to about 32 thousand tokens of context. Whether fast kernels can make this pay off in real serving is unproven."
+     ]
+    }
+   ]
+  },
+  "robotics": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "A Learned Robot Simulator Gets Audited, and One-Step Accuracy Fails the Test",
+     "dek": "A single-author audit of a neural-network simulator for a four-legged robot finds that checking one step ahead hides how badly the model drifts over longer stretches.",
+     "body": [
+      "On November 17–18, 2026, Joyjeet Singh posted an audit of a published learned simulator. <cite index=\"20-3\">The audit covers the dynamics model of the Robotic World Model (RWM) for the ANYmal D quadruped, plus the uncertainty estimate in its follow-up, RWM-U.</cite> <cite index=\"21-4\">It was done without a graphics processing unit (GPU) and mostly on a 2017 laptop.</cite> <cite index=\"20-4\">The author measured 101 trained simulators, 200 compressed copies and 38 simulators of three other architectures. Policies trained inside them were then tested in a hand-built MuJoCo model of the robot.</cite> MuJoCo is a standard physics engine.",
+      "Recall what a learned simulator is. Think of a weather forecaster who predicts tomorrow, then predicts the day after using only their own forecast. <cite index=\"20-1\">A neural network predicts the robot's next state and is run forward on its own predictions.</cite> <cite index=\"21-8\">RWM learns a recurrent dynamics model of ANYmal D from the robot's own body measurements and uses it as a simulator for policy learning.</cite> A recurrent model carries a memory state from step to step. <cite index=\"27-5\">Such models are usually trained and checked one step ahead, although a policy uses them for a hundred steps or more.</cite>",
+      "The audit's key idea is to judge the simulator over long rollouts, not single steps. Small errors compound. Suppose each step multiplies the error by 1.02. After 100 steps, which is 2 seconds at 50 hertz, the error has grown by about 1.02^100 ≈ 7.2 times. Training on the model's own rollouts penalizes this drift directly:",
+      "\\[ L_{\\text{roll}} = \\frac{1}{H}\\sum_{k=1}^{H} \\lVert \\hat{s}_{t+k} - s_{t+k} \\rVert^2, \\quad \\hat{s}_{t+k} = f_\\theta(\\hat{s}_{t+k-1}, a_{t+k-1}), \\; \\hat{s}_t = s_t \\]",
+      "This loss averages the model's error over H steps of its own feedback loop, not just the first step. Here \\(s_{t+k}\\) is the true robot state k steps ahead, a vector of body measurements. \\(\\hat{s}_{t+k}\\) is the model's predicted state at that step. \\(f_\\theta\\) is the dynamics network with parameters \\(\\theta\\). \\(a\\) is the action vector, \\(H\\) is the rollout length, and \\(t\\) is the starting time step.",
+      "The results favor rollout-based judging. <cite index=\"20-5\">Training on the model's own rollouts beat one-step training at 368 steps on all ten held-out episodes, a registered test, although one-step training was better one step ahead.</cite> Held-out episodes are recordings kept out of training. <cite index=\"20-6\">Pruning 30% of the weights kept 90% of the model's skill one step ahead but only 39% at 2 seconds.</cite> Pruning means deleting the smallest weights. The caveats are large. <cite index=\"27-7,27-8\">The author also reports nine of their own claims that they withdrew. The scope is one robot, one gait, simulated data and no hardware.</cite> The conclusion is cautious: <cite index=\"21-12\">a learned simulator should be accepted by what policies trained in it do, with open-loop error as a first filter only.</cite>"
+     ],
+     "why": "As world models replace hand-built physics engines for training robot policies, this shows that the usual one-step accuracy check can pick the wrong model.",
+     "terms": [
+      {
+       "term": "Robotic World Model (RWM)",
+       "def": "A neural network trained on a robot's own state measurements to predict its next state, then used as a simulator for training walking policies."
+      },
+      {
+       "term": "Learned simulator",
+       "def": "A neural network that stands in for a physics engine by predicting the next state from the current state and action."
+      },
+      {
+       "term": "Rollout",
+       "def": "Running a model forward for many steps by feeding each prediction back in as the next input."
+      },
+      {
+       "term": "Pruning",
+       "def": "Removing the smallest weights from a network to make it smaller and cheaper to run."
+      },
+      {
+       "term": "Graphics processing unit (GPU)",
+       "def": "A chip built for parallel math that is normally used to train neural networks."
+      }
+     ],
+     "sources": [
+      {
+       "title": "Auditing a Learned Simulator for Legged Robots: The Robotic World Model on ANYmal D (arXiv abstract)",
+       "url": "https://arxiv.org/abs/2611.23118"
+      },
+      {
+       "title": "Auditing a Learned Simulator for Legged Robots (full text)",
+       "url": "https://arxiv.org/pdf/2611.23118"
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "A learned simulator that looks accurate one step ahead can still drift badly over the 100 or more steps a policy actually uses.",
+      "In this audit, pruning 30% of weights kept 90% of one-step skill but only 39% of skill at 2 seconds.",
+      "The evidence covers one robot, one gait and simulated data with no hardware, so the lesson is about how to evaluate simulators, not proof of real-world transfer."
+     ],
+     "deeper": [
+      "A learned simulator is a neural network that stands in for physics. Give it the robot's current state, meaning a vector of body measurements such as joint angles and velocities, plus an action, and it predicts the next state. Think of a weather forecaster who predicts tomorrow, then predicts the day after using only their own forecast. A policy, the controller being trained, does exactly this inside the simulator for a hundred steps or more. A recurrent model carries a memory state from step to step. The Robotic World Model (RWM) is such a model for the ANYmal D quadruped, a four-legged robot. It learns from the robot's own body measurements and serves as a simulator for policy learning.",
+      "On November 17–18, 2026, Joyjeet Singh posted an audit of RWM's dynamics model and of the uncertainty estimate in its follow-up, RWM-U. The audit ran without a graphics processing unit (GPU), a chip built for parallel arithmetic, and mostly on a 2017 laptop. It measured 101 trained simulators, 200 compressed copies and 38 simulators of three other architectures. Policies trained inside them were then tested in a hand-built model of the robot in MuJoCo, a standard physics engine.",
+      "The key idea is to judge a simulator over long rollouts, not single steps. A rollout is a run in which the model feeds on its own predictions. Models are usually trained and checked one step ahead, but a one-step score hides compounding. Suppose each step multiplies the error by 1.02. After 100 steps, which is 2 seconds at 50 hertz (steps per second), the error has grown by 1.02^100 ≈ 7.2 times. A model that looks nearly perfect at step one can still be badly off at step one hundred.",
+      "Training on rollouts attacks this directly:",
+      "\\[ L_{\\text{roll}} = \\frac{1}{H}\\sum_{k=1}^{H} \\lVert \\hat{s}_{t+k} - s_{t+k} \\rVert^2, \\quad \\hat{s}_{t+k} = f_\\theta(\\hat{s}_{t+k-1}, a_{t+k-1}), \\; \\hat{s}_{t+k-1}\\big|_{k=1} = s_t \\]",
+      "The loss averages the model's squared error across H steps of its own feedback loop, so drift is penalized where it builds up. Here \\(s_{t+k}\\) is the true state k steps after the start, a vector of body measurements. \\(\\hat{s}_{t+k}\\) is the model's predicted state at that step, with the same shape. \\(f_\\theta\\) is the dynamics network, and \\(\\theta\\) is its vector of learnable weights. \\(a_{t+k-1}\\) is the action vector applied at the previous step. \\(H\\) is the rollout length, \\(t\\) is the starting time step, and the double bars give the vector's length, squared. The recursion says each prediction is built from the previous prediction, not from the truth. The only true state used is the starting one, \\(s_t\\).",
+      "The same compounding can be written as \\(e_k \\approx r^k e_0\\). It says error grows geometrically when each step multiplies it by a fixed factor. Here \\(e_k\\) is the error size after k steps, \\(e_0\\) is the starting error, and \\(r\\) is the per-step growth factor. In the example above, \\(r = 1.02\\) and \\(k = 100\\).",
+      "The results favor rollout-based judging. Training on the model's own rollouts beat one-step training at 368 steps on all ten held-out episodes, which are recordings kept out of training. This was a registered test, meaning the comparison was fixed before the results were seen. One-step training was still better one step ahead. Pruning, which deletes the smallest weights, shows the same split. Removing 30% of the weights kept 90% of the model's skill one step ahead but only 39% at 2 seconds. A one-step check would have called the compressed copies nearly lossless.",
+      "This differs from the usual practice of training and validating on single transitions, where each input is a true state. That setup never shows the model its own mistakes. Rollout training does, and the audit's evaluation goes further by asking what policies do after training inside the simulator.",
+      "The caveats are large. The author withdrew nine of their own claims. The scope is one robot, one gait, simulated data and no hardware. The hand-built MuJoCo model used as judge is itself an approximation of the real robot. It is also unclear how the results scale to rougher terrain, other gaits or longer horizons. The conclusion is cautious: accept a learned simulator by what policies trained in it do, and treat open-loop error, meaning error over a run with no true-state correction, as a first filter only."
+     ]
+    }
+   ]
+  },
+  "discoveries": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "Old Materials Databases Hid Dozens of Ultrathin Crystals. A Classifier Found Them, and Rare-Earth Versions Were Made in Minutes",
+     "dek": "A Swedish-led team used machine learning to sift crystal records for forgotten two-dimensional carbides, then used a self-igniting reaction to make new magnetic, semiconducting versions.",
+     "body": [
+      "Ali Saffar Shamshirgar, Johanna Rosén and colleagues at Linköping University, with partners in Estonia and Finland, reported the work in Science on October 29, 2026. An arXiv preprint appeared on August 17, 2026. Their first step was triage. <cite index=\"32-5\">They screened crystal structures from the Materials Project and the Open Quantum Materials Database against the \\(M_2XT_2\\) structural framework. They then used machine learning to separate MXene-like structures from other layered materials.</cite> <cite index=\"28-3\">The preprint lists three classifiers: a support vector machine, a multilayer perceptron, and a simplified graph-based model.</cite> Recall that a support vector machine draws one boundary between two classes, \\[\\hat y=\\operatorname{sign}(\\mathbf w^{\\top}\\phi(\\mathbf x)+b).\\] This equation says which side of a learned boundary a structure falls on. Here \\(\\mathbf x\\) is a vector describing one crystal, \\(\\phi\\) maps it to richer features, \\(\\mathbf w\\) is a learned weight vector of the same length as \\(\\phi(\\mathbf x)\\), \\(b\\) is a learned offset, and \\(\\hat y=+1\\) means 'MXene-like'. I could not confirm from the sources which classifier gave the headline numbers.",
+      "The screen turned up old records that were really MXenes. <cite index=\"31-3\">The published abstract reports 33 previously synthesized but unrecognized candidates.</cite> <cite index=\"33-4\">Chemistry World reports that the team synthesised seven of them, including thorium nitride oxide.</cite> That is about 21% of the list (7 of 33). The preprint's counts differ: it describes 38 candidates and five re-synthesised, so treat the exact tallies as version-dependent. The synthesis idea is like a match on thermite. <cite index=\"32-7\">A brief ignition starts a highly exothermic reaction. It runs without sustained external heating and finishes within minutes, forming layered \\(M_2CT_2\\) phases directly.</cite> <cite index=\"33-5\">No etching of a 3D crystal is needed.</cite>",
+      "The team then looked forward. <cite index=\"33-6\">They trained a model on the mined data to flag promising candidates among compounds never synthesised.</cite> <cite index=\"30-6\">That led to 11 previously unexplored rare-earth \\(M_2CT_2\\) MXenes, with \\(M\\) = Pr, Nd, Sm, Gd, Tb, Ho and Tm.</cite> <cite index=\"33-7,33-8\">Raman spectroscopy, X-ray diffraction and density functional theory calculations agreed. Most of the new compounds were semiconducting, with varied magnetic behaviour.</cite> Density functional theory approximates electron behaviour in a solid from quantum mechanics. One caveat: the machine learning here is classical pattern recognition for database triage. It is not a frontier foundation model. The 'discovery' is partly a rediscovery of what the literature already contained."
+     ],
+     "why": "It shows AI used as a literature-and-database auditor that points chemists to synthesizable targets, and the same pipeline could be reused for other materials families.",
+     "terms": [
+      {
+       "term": "MXene",
+       "def": "A two-dimensional carbide or nitride, a stack of atom-thin sheets of transition metal and carbon or nitrogen with chemical groups on the surfaces."
+      },
+      {
+       "term": "MAX phase",
+       "def": "A layered ceramic that serves as the parent crystal for most MXenes. It is made of a transition metal, a main-group element layer, and carbon or nitrogen."
+      },
+      {
+       "term": "Support vector machine",
+       "def": "A classifier that learns a boundary separating two groups of examples, such as MXene-like and non-MXene structures."
+      },
+      {
+       "term": "Self-propagating high-temperature synthesis",
+       "def": "A reaction that, once briefly ignited, releases enough heat to keep itself going until finished, like a burning fuse."
+      },
+      {
+       "term": "Density functional theory",
+       "def": "A quantum-mechanical calculation method that estimates a material's electronic structure and properties from its atomic arrangement."
+      }
+     ],
+     "sources": [
+      {
+       "title": "Data-driven discovery and rapid, direct synthesis of MXenes (Science)",
+       "url": "https://www.science.org/doi/abs/10.1126/science.aeh5957"
+      },
+      {
+       "title": "arXiv:2608.16644 preprint abstract",
+       "url": "https://arxiv.org/abs/2608.16644"
+      },
+      {
+       "title": "Dozens of unknown MXenes found buried in materials databases (Chemistry World)",
+       "url": "https://www.chemistryworld.com/news/dozens-of-unknown-mxenes-found-buried-in-materials-databases/4024445.article"
+      }
+     ],
+     "background": [
+      "Start with the materials. A MAX phase is a layered ceramic with the formula \\(M_{n+1}AX_n\\). Here \\(M\\) is an early transition metal, \\(A\\) is a layer of a main-group element such as aluminium, and \\(X\\) is carbon or nitrogen. In 2011, Naguib, Gogotsi, Barsoum and colleagues at Drexel University dissolved the aluminium layers out of titanium aluminium carbide with hydrofluoric acid. What remained was a stack of atom-thin sheets, which they named MXenes. Their general formula is \\(M_{n+1}X_nT_x\\). The new symbol \\(T_x\\) stands for chemical groups (oxygen, fluorine, chlorine and others) that stick to the surfaces. A film a few millimetres thick can hold millions of such layers, so the surface area is enormous. That makes MXenes useful for batteries, electromagnetic shielding and membranes.",
+      "The open problem is search plus synthesis. Etching only works when the \\(A\\) layer can be removed without wrecking the rest, and it uses hazardous chemicals and a lot of water. That confines the field to a small set of MAX parents. Earlier work widened it by hand. For example, the Rosén group at Linköping University reported in 2017 an MXene with ordered vacancies. Meanwhile, records of layered carbides and halides that look MXene-like were scattered across old crystallography papers and databases. Nobody had systematically asked how many 'new' MXene chemistries were already on the shelf. Nor had anyone asked whether they could be made without etching."
+     ],
+     "status": "The work is peer-reviewed in Science (volume 394, issue 6823, October 29, 2026) after an August 2026 arXiv preprint. I found no independent reproduction, and the candidate and synthesis counts differ between the preprint and the journal version.",
+     "recap": [
+      "Machine learning screened two big crystal databases and flagged dozens of already-made but unrecognised MXene-like compounds.",
+      "A self-igniting reaction made these layered carbides in minutes without etching or sustained heating.",
+      "The team reports 11 new rare-earth MXenes that are mostly semiconducting with varied magnetism, but independent replication is not yet reported."
+     ],
+     "deeper": [
+      "Start with the materials. A MAX phase is a layered ceramic (a hard, brittle compound of metal and non-metal atoms) with formula \\(M_{n+1}AX_n\\). \\(M\\) is an early transition metal, \\(A\\) is a main-group element such as aluminium, and \\(X\\) is carbon or nitrogen. Picture a stack of sandwiches in which the \\(A\\) layer is the glue. In 2011 the Drexel University team dissolved that glue from titanium aluminium carbide using hydrofluoric acid. What remained were atom-thin sheets called MXenes, with formula \\(M_{n+1}X_nT_x\\). \\(T_x\\) stands for chemical groups, such as oxygen, fluorine and chlorine, that stick to the surfaces. This etching is hazardous, uses a lot of water, and works only when the \\(A\\) layer can be removed cleanly. So the field has stayed tied to a small set of parents.",
+      "The Linköping team, with partners in Estonia and Finland, asked a different question. How many MXene-like crystals were already recorded in old databases? They screened structures from the Materials Project and the Open Quantum Materials Database (both are public catalogues of crystal structures) against the \\(M_2XT_2\\) framework, which describes one \\(M_2X\\) layer with surface groups attached. Then they trained classifiers, models that assign each structure to a category, here \"MXene-like\" or \"other layered material.\" This is triage: a cheap filter that tells chemists which records to read closely.",
+      "The preprint lists three classifiers: a support vector machine (SVM), which draws one boundary between two classes; a multilayer perceptron (MLP), a small neural network of stacked layers; and a simplified graph-based model, which treats atoms as nodes and bonds as links. I could not confirm which one produced the headline numbers.",
+      "The SVM is the simplest to write down:",
+      "\\[\\hat y=\\operatorname{sign}(\\mathbf w^{\\top}\\phi(\\mathbf x)+b).\\]",
+      "This says which side of a learned boundary a crystal falls on. Here \\(\\mathbf x\\) is a vector of numbers describing one crystal. \\(\\phi\\) maps \\(\\mathbf x\\) to richer features. \\(\\mathbf w\\) is a learned weight vector with the same length as \\(\\phi(\\mathbf x)\\). \\(b\\) is a learned scalar offset. The \\(\\operatorname{sign}\\) function returns \\(+1\\) or \\(-1\\). \\(\\hat y=+1\\) means \"MXene-like.\"",
+      "Here is a toy case with invented numbers. Let \\(\\phi(\\mathbf x)=\\mathbf x\\), \\(\\mathbf w=(2,-1)\\) and \\(b=-0.5\\). A crystal with \\(\\mathbf x=(1,0.5)\\) scores \\(2(1)-1(0.5)-0.5=1.0\\), so \\(\\hat y=+1\\). A crystal with \\(\\mathbf x=(0.1,1)\\) scores \\(0.2-1-0.5=-1.3\\), so \\(\\hat y=-1\\).",
+      "The screen found old records that were really MXenes. The published abstract reports 33 previously synthesized but unrecognized candidates. Chemistry World reports that seven were synthesised, including thorium nitride oxide. That is 7/33, about 21%. The preprint instead describes 38 candidates and five re-synthesised, about 13%. Treat the tallies as version-dependent.",
+      "The synthesis resembles lighting thermite. A brief ignition starts a highly exothermic reaction, one that releases heat and keeps itself going. It needs no sustained external heating and finishes within minutes, forming layered \\(M_2CT_2\\) phases directly. No etching of a three-dimensional parent crystal is needed.",
+      "The team then looked forward. They trained a model on the mined data to flag promising compounds that had never been made. That led to 11 unexplored rare-earth \\(M_2CT_2\\) MXenes, with \\(M\\) = Pr, Nd, Sm, Gd, Tb, Ho and Tm. Raman spectroscopy (which probes vibrations of the lattice), X-ray diffraction (which reveals the atomic stacking pattern) and density functional theory calculations agreed. Density functional theory approximates electron behaviour in a solid from quantum mechanics. Most of the new compounds were semiconducting, meaning they conduct only under certain conditions, with varied magnetic behaviour.",
+      "Compare this with earlier work. Earlier expansions, such as the 2017 Linköping MXene with ordered vacancies (planned gaps in the lattice), were widened by hand, one chemistry at a time. Here, a classifier searches the existing record, and a different synthesis route removes the dependence on etching.",
+      "The limits are clear. This is classical pattern recognition for database triage, not a frontier foundation model. The \"discovery\" is partly rediscovery of what the literature already held. Open questions follow. The sources disagree on counts. I could not confirm which classifier performed best. A classifier trained on known structures may also miss chemistries unlike anything already recorded."
+     ],
+     "checked": false
+    }
+   ]
+  },
+  "primer": {
+   "status": "error",
+   "error": "Today's primer wasn't filed."
+  },
+  "throwback": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "Backpropagation, 1986: Teaching Every Layer of a Network Who Is to Blame",
+     "dek": "A 1986 paper showed how to send error signals backward through a network, so that layers hidden deep inside could learn useful features on their own.",
+     "body": [
+      "The problem: a network with several layers has many weights, and only the last layer touches the answer. A weight is an adjustable number that scales a signal passing from one unit to the next. If the output is wrong, which weight deep inside deserves the blame? Earlier learning rules could adjust weights wired directly to the output but offered no principled way to train the layers in between. Those in-between layers are called hidden layers. A hidden layer is a layer between input and output whose values are not directly supervised. Without a way to train them, networks stayed shallow and limited.",
+      "The intuition: picture a factory assembly line where the final product comes out defective. The last station asks how much each of its inputs contributed to the defect. Each earlier station then asks the same question of the station before it, passing the blame backward. Every station learns how much its own settings mattered. Rumelhart, Hinton, and Williams (1986), in \"Learning representations by back-propagating errors\" (Nature), showed this works for neural networks. They also showed that hidden units end up encoding useful internal features, which they called representations. A hidden unit is a single neuron-like element inside a hidden layer.",
+      "The vocabulary. A loss is a single number measuring how wrong the network is. A gradient is the vector of partial derivatives of the loss with respect to each weight, and it points toward steepest increase. A partial derivative says how much the loss changes when one weight is nudged and all others are held still. The chain rule says that when one quantity depends on another through a middle step, the derivatives multiply:\n\\[ \\frac{dL}{dx} = \\frac{dL}{dy}\\frac{dy}{dx} \\]\\nThis says that a small change in x affects the loss by first changing y, and then y changing the loss. Here \\(L\\) is the loss (a single number), \\(y\\) is the middle quantity that depends on \\(x\\), and \\(x\\) is the earlier quantity we nudge. The forward pass computes outputs layer by layer. The backward pass, which is backpropagation, reuses the forward values to compute every gradient in one sweep.",
+      "The mechanism. Recall that a layer is a group of units that all process the same input together. For layer \\(l\\), the pre-activation (the weighted sum before the nonlinearity) is \\(z^{(l)} = W^{(l)} a^{(l-1)} + b^{(l)}\\), and the activation (the layer's output) is \\(a^{(l)} = \\sigma(z^{(l)})\\). Here \\(W^{(l)}\\) is the weight matrix (outputs by inputs), \\(b^{(l)}\\) is the bias vector (a per-unit constant offset), \\(a^{(l-1)}\\) is the previous layer's output, and \\(\\sigma\\) is a differentiable nonlinearity (a curved function that lets the network learn more than straight-line relationships) applied elementwise. Define the error signal \\(\\delta^{(l)} = \\partial L / \\partial z^{(l)}\\), which says how sensitive the loss is to each unit's pre-activation. It flows backward like this:\n\\[ \\delta^{(l)} = \\left( (W^{(l+1)})^{\\top} \\delta^{(l+1)} \\right) \\odot \\sigma'(z^{(l)}) \\]\\nIn words, each layer takes the next layer's blame, routes it back through the same weights used going forward, and scales it by the local slope \\(\\sigma'\\). Here \\(\\delta^{(l)}\\) is the error signal of layer \\(l\\) (one entry per unit in that layer), \\(\\delta^{(l+1)}\\) is the error signal of the next layer, \\(W^{(l+1)}\\) is the next layer's weight matrix, and \\(\\sigma'(z^{(l)})\\) is the slope of the nonlinearity at each unit's pre-activation. The symbol \\(\\odot\\) means elementwise multiplication, and \\(\\top\\) means transpose (swapping rows and columns). The weight gradient then follows:\n\\[ \\frac{\\partial L}{\\partial W^{(l)}} = \\delta^{(l)} \\, (a^{(l-1)})^{\\top}, \\qquad W^{(l)} \\leftarrow W^{(l)} - \\eta \\, \\frac{\\partial L}{\\partial W^{(l)}} \\]\\nA weight's gradient is its unit's blame times the input it received, and the update steps downhill. Here \\(\\partial L/\\partial W^{(l)}\\) is the gradient, a matrix with the same shape as \\(W^{(l)}\\), \\(a^{(l-1)}\\) is the input vector to layer \\(l\\), the arrow means \"is replaced by\", and \\(\\eta\\) is the learning rate, a small positive step size.",
+      "A tiny example with no nonlinearity, so the numbers stay clear. Let \\(h = w_1 x\\), \\(y = w_2 h\\), and \\(L = \\tfrac12 (y-t)^2\\). Here \\(x\\) is the input, \\(h\\) is the hidden value, \\(y\\) is the output, \\(w_1\\) and \\(w_2\\) are the two weights, and \\(t\\) is the target. Take \\(x=2\\), \\(w_1=0.5\\), \\(w_2=3\\), \\(t=2\\). Forward: \\(h=1\\), \\(y=3\\), \\(L=0.5\\). Backward: \\(\\partial L/\\partial y = y-t = 1\\). Then \\(\\partial L/\\partial w_2 = 1 \\cdot h = 1\\). The blame passed to the hidden value is \\(\\partial L/\\partial h = 1 \\cdot w_2 = 3\\), so \\(\\partial L/\\partial w_1 = 3 \\cdot x = 6\\). With \\(\\eta = 0.01\\), the new weights are \\(w_1 = 0.5 - 0.06 = 0.44\\) and \\(w_2 = 3 - 0.01 = 2.99\\). The new forward pass gives \\(h = 0.88\\), \\(y = 2.6312\\), and \\(L \\approx 0.199\\), down from 0.5.",
+      "What changed afterward: backpropagation became the standard way to compute gradients for networks of any depth. Today it runs inside automatic differentiation, software that records the forward computation and replays it backward to produce gradients. Transformers (attention-based language models), convolutional networks (networks that scan small filters across images), and the policies used in robotics (networks that choose a robot's actions) are all trained this way. Gradient-based optimizers, the rules that use gradients to update weights, consume its output. The core idea is unchanged from 1986. Modern work mostly makes it cheaper, more stable, and more memory-efficient."
+     ],
+     "why": "Nearly every deep model today, from language models to robot controllers, learns by running this backward sweep to get its gradients.",
+     "terms": [
+      {
+       "term": "Hidden layer",
+       "def": "A layer between input and output whose values are not directly supervised, so it must learn its own useful features."
+      },
+      {
+       "term": "Chain rule",
+       "def": "The calculus rule that the derivative of a composed function is the product of the derivatives of its steps."
+      },
+      {
+       "term": "Error signal (delta)",
+       "def": "The derivative of the loss with respect to a unit's pre-activation, which measures how much that unit is to blame."
+      }
+     ],
+     "sources": [
+      {
+       "title": "Rumelhart, D. E., Hinton, G. E., & Williams, R. J. (1986). Learning representations by back-propagating errors. Nature.",
+       "url": "https://www.nature.com/articles/323533a0"
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "Backpropagation assigns blame to every weight by applying the chain rule backward from the loss.",
+      "Each layer's error signal is the next layer's signal passed back through the transposed weights and scaled by the local slope.",
+      "Automatic differentiation in modern frameworks is this same procedure, applied to far larger models."
+     ],
+     "deeper": [
+      "A network with several layers has many weights, and only the last layer touches the answer. A weight is an adjustable number that scales a signal passing from one unit to the next. If the output is wrong, which weight deep inside deserves the blame? Earlier learning rules could adjust weights wired directly to the output. They gave no principled way to train the layers in between, called hidden layers: layers between input and output whose values are not directly supervised. Without that, networks stayed shallow and limited.",
+      "Picture a factory assembly line that ships a defective product. The last station asks how much each of its inputs contributed to the defect. Each earlier station then asks the same question of the station before it, so the blame travels backward. Every station learns how much its own settings mattered. Rumelhart, Hinton, and Williams (1986), in \"Learning representations by back-propagating errors\" (Nature), showed this works for neural networks. They also showed that hidden units, the single neuron-like elements inside hidden layers, end up encoding useful internal features, which they called representations.",
+      "Some vocabulary first. A loss is a single number measuring how wrong the network is. A partial derivative says how much the loss changes when one weight is nudged and all others are held still. A gradient is the vector of these partial derivatives, one per weight, and it points toward steepest increase of the loss. The chain rule says that when a quantity depends on another through a middle step, the derivatives multiply:",
+      "\\[ \\frac{dL}{dx} = \\frac{dL}{dy}\\frac{dy}{dx} \\]",
+      "A small change in \\(x\\) first changes \\(y\\), and that change in \\(y\\) then changes the loss. Here \\(L\\) is the loss (a single number), \\(y\\) is the middle quantity that depends on \\(x\\), and \\(x\\) is the earlier quantity we nudge.",
+      "The forward pass computes outputs layer by layer. The backward pass, which is backpropagation, reuses the stored forward values to get every gradient in one sweep. Recall that a layer is a group of units that all process the same input together. For layer \\(l\\), the pre-activation is the weighted sum before the nonlinearity:",
+      "\\[ z^{(l)} = W^{(l)} a^{(l-1)} + b^{(l)}, \\qquad a^{(l)} = \\sigma(z^{(l)}) \\]",
+      "The first equation mixes the previous layer's output linearly, and the second bends the result so the network can learn more than straight-line relationships. Here \\(W^{(l)}\\) is the weight matrix (outputs by inputs), \\(b^{(l)}\\) is the bias vector (a per-unit constant offset), \\(a^{(l-1)}\\) is the previous layer's output, \\(a^{(l)}\\) is this layer's output (the activation), and \\(\\sigma\\) is a differentiable nonlinearity applied elementwise.",
+      "Now define the error signal \\(\\delta^{(l)} = \\partial L / \\partial z^{(l)}\\), which says how sensitive the loss is to each unit's pre-activation. It flows backward like this:",
+      "\\[ \\delta^{(l)} = \\left( (W^{(l+1)})^{\\top} \\delta^{(l+1)} \\right) \\odot \\sigma'(z^{(l)}) \\]",
+      "Each layer takes the next layer's blame, routes it back through the same weights used going forward, and scales it by the local slope. Here \\(\\delta^{(l)}\\) has one entry per unit in layer \\(l\\), \\(\\delta^{(l+1)}\\) is the next layer's error signal, \\(W^{(l+1)}\\) is the next layer's weight matrix, \\(\\sigma'(z^{(l)})\\) is the slope of the nonlinearity at each unit's pre-activation, \\(\\odot\\) is elementwise multiplication, and \\(\\top\\) is transpose (swapping rows and columns). The weight gradient and update then follow:",
+      "\\[ \\frac{\\partial L}{\\partial W^{(l)}} = \\delta^{(l)} \\, (a^{(l-1)})^{\\top}, \\qquad W^{(l)} \\leftarrow W^{(l)} - \\eta \\, \\frac{\\partial L}{\\partial W^{(l)}} \\]",
+      "A weight's gradient is its unit's blame times the input it received, and the update steps downhill. Here \\(\\partial L/\\partial W^{(l)}\\) is a matrix with the same shape as \\(W^{(l)}\\), \\(a^{(l-1)}\\) is the input vector to layer \\(l\\), the arrow means \"is replaced by\", and \\(\\eta\\) is the learning rate, a small positive step size.",
+      "A tiny example, with no nonlinearity so the numbers stay clear. Let \\(h = w_1 x\\), \\(y = w_2 h\\), and \\(L = \\tfrac12 (y-t)^2\\). Here \\(x\\) is the input, \\(h\\) is the hidden value, \\(y\\) is the output, \\(w_1\\) and \\(w_2\\) are the weights, and \\(t\\) is the target. Take \\(x=2\\), \\(w_1=0.5\\), \\(w_2=3\\), \\(t=2\\). Forward: \\(h=1\\), \\(y=3\\), \\(L=0.5\\). Backward: \\(\\partial L/\\partial y = y-t = 1\\), so \\(\\partial L/\\partial w_2 = 1 \\cdot h = 1\\). The blame passed to the hidden value is \\(\\partial L/\\partial h = 1 \\cdot w_2 = 3\\), so \\(\\partial L/\\partial w_1 = 3 \\cdot x = 6\\). With \\(\\eta = 0.01\\), the new weights are \\(w_1 = 0.44\\) and \\(w_2 = 2.99\\). The new forward pass gives \\(h = 0.88\\), \\(y = 2.6312\\), and \\(L \\approx 0.199\\), down from 0.5.",
+      "Compared with earlier rules, which could only correct weights touching the output, backpropagation gives every weight a gradient at roughly the cost of one extra pass. That made networks of any depth trainable. Today it runs inside automatic differentiation, software that records the forward computation and replays it backward. Transformers (attention-based language models), convolutional networks (networks that scan small filters across images), and robot policies (networks that choose a robot's actions) are all trained this way. Gradient-based optimizers, the rules that turn gradients into weight updates, consume its output.",
+      "The limits are practical. The backward pass needs the stored forward activations, so memory grows with depth. Because the blame is multiplied by a slope and a weight matrix at every layer, it can shrink or grow sharply in deep networks, which makes training unstable. The method also requires every operation to be differentiable. The core idea is unchanged from 1986, and modern work mostly makes it cheaper, more stable, and more memory-efficient."
+     ],
+     "era": "1986"
+    }
+   ]
+  }
+ }
+}
