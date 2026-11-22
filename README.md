@@ -67,8 +67,9 @@ printing starts around 6:30.
 
 ## Cost and adjustments
 
-Each edition makes about 27 requests: one web search per section, a web-search fact-check of each Discoveries
-story, a fact-check pass on the primer and Throwback, and a deeper explainer for every story. Check your usage
+Each edition makes about 19 requests: one web search per section (one story each), a web-search fact-check of
+the Discoveries story, a fact-check pass on the primer and Throwback, and a deeper explainer for every story.
+For two stories per section, add `STORIES: "2"` to the print step's `env`. Check your usage
 on the Claude Console after the first few days. To trim the cost, add `DEEPER: "0"` to the print step's `env` to
 skip the explainers, or set `MODEL` to a smaller model.
 

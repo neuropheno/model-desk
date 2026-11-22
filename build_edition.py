@@ -17,6 +17,7 @@ import anthropic
 
 TZ = ZoneInfo(os.environ.get("TIMEZONE") or "America/New_York")
 MODEL = os.environ.get("MODEL") or "claude-sonnet-5-5"
+STORIES = int(os.environ.get("STORIES") or 1)  # stories per news section
 BUILD_HOUR = int(os.environ.get("BUILD_HOUR") or 6)
 DEEPER = (os.environ.get("DEEPER") or "1") != "0"
 EDITIONS = Path(__file__).parent / "docs" / "editions"
@@ -260,6 +261,22 @@ def extract(text: str, open_c: str, close_c: str):
     return json.loads(fix_escapes(text[start:end + 1]), strict=False)
 
 
+JSON_RULE = ("Format rules for the JSON: inside text, never use straight double quotes; use single quotes or "
+             "curly quotes for quoted words and example tokens. Write each LaTeX backslash as a double backslash.")
+
+
+def ask_json(prompt: str, open_c: str, close_c: str, search: bool = False, max_tokens: int = 5000):
+    """Call Claude and parse its JSON reply. If the reply can't be parsed, ask once more, saying what went wrong."""
+    text = call(prompt + "\n" + JSON_RULE, search=search, max_tokens=max_tokens)
+    try:
+        return extract(text, open_c, close_c)
+    except Exception as e:  # noqa: BLE001
+        print(f"[json] first reply unreadable ({e}); retrying once")
+        retry = (prompt + "\n" + JSON_RULE + f"\nA previous attempt failed to parse as JSON ({e}). Return valid JSON "
+                 "only, with every quote inside a string escaped or replaced by a single quote.")
+        return extract(call(retry, search=search, max_tokens=max_tokens), open_c, close_c)
+
+
 def normalize(a: dict) -> dict:
     body = a.get("body") or []
     return {
@@ -313,7 +330,7 @@ Accuracy rules. These matter more than anything else:
   Sources must be URLs you found.
 {STYLE}
 Respond with ONLY a JSON array of {n} object(s) shaped like {SCI_SHAPE}. No preamble, no commentary, no markdown fences."""
-    arr = extract(call(prompt, search=True, max_tokens=8000), "[", "]")
+    arr = ask_json(prompt, "[", "]", search=True, max_tokens=8000)
     if not isinstance(arr, list) or not arr:
         raise ValueError("No stories were filed.")
     return [normalize(a) for a in arr[:n]]
@@ -336,7 +353,7 @@ spell out acronyms on first use, define terms, and explain every symbol after ea
 {STYLE}
 Keep the structure and length.
 Respond with ONLY the corrected JSON object shaped like {SCI_SHAPE}. No preamble, no markdown fences."""
-    fixed = normalize(extract(call(prompt, search=True, max_tokens=7000), "{", "}"))
+    fixed = normalize(ask_json(prompt, "{", "}", search=True, max_tokens=7000))
     fixed["checked"] = True
     return fixed
 
@@ -368,7 +385,7 @@ Rules:
 - "terms": up to 5, including every acronym used, each with a plain definition.
 - At most 2 sources per article. Sources must be URLs you found in search.
 - Respond with ONLY a JSON array of {n} object(s) shaped like {SHAPE}. No preamble, no commentary, no markdown fences."""
-    arr = extract(call(prompt, search=True, max_tokens=7000), "[", "]")
+    arr = ask_json(prompt, "[", "]", search=True, max_tokens=7000)
     if not isinstance(arr, list) or not arr:
         raise ValueError("No stories were filed.")
     return [normalize(a) for a in arr[:n]]
@@ -377,7 +394,7 @@ Rules:
 def section(sec, avoid, date_long, day_number):
     sid, last = sec["id"], None
     focus = sec["focus"][day_number % len(sec["focus"])] if sec.get("focus") else None
-    for n in (2, 1):
+    for n in (STORIES, STORIES):
         try:
             if sec.get("backstory"):
                 articles = backstory_news(sec, n, avoid, date_long, focus)
@@ -428,11 +445,11 @@ Write the body as 7 to 9 short paragraphs (about 750 words in total), in this or
 - "sources": up to 2 canonical papers. Only give a URL if it is an arXiv abstract page you are certain of; otherwise use an empty string for url.
 - Respond with ONLY a JSON object shaped like {PRIMER_SHAPE}. No preamble, no markdown fences."""
     try:
-        a = normalize(extract(call(prompt, max_tokens=5000), "{", "}"))
+        a = normalize(ask_json(prompt, "{", "}", max_tokens=6000))
         a = review(a, "No curated list for this topic. Keep paper titles and years only if they are certain.", PRIMER_SHAPE)
         return {"status": "done", "articles": [a]}
     except Exception as e:  # noqa: BLE001
-        print(f"[primer] failed: {e}")
+        print(f"[primer] failed: {type(e).__name__}: {e}")
         return {"status": "error", "error": "Today's primer wasn't filed."}
 
 
@@ -472,7 +489,7 @@ use, define terms, and explain every symbol after each equation.
 Keep the length and structure otherwise.
 Respond with ONLY the corrected JSON object shaped like {shape}. No preamble, no markdown fences."""
     try:
-        fixed = normalize(extract(call(prompt, max_tokens=5000), "{", "}"))
+        fixed = normalize(ask_json(prompt, "{", "}", max_tokens=6000))
         if "sources" not in shape:
             fixed["sources"] = article.get("sources", [])
         return fixed
@@ -502,13 +519,13 @@ including where the idea lives in today's models.
 {ACCURACY}
 Respond with ONLY a JSON object shaped like {TB_SHAPE}. No preamble, no markdown fences."""
     try:
-        a = normalize(extract(call(prompt, max_tokens=5000), "{", "}"))
+        a = normalize(ask_json(prompt, "{", "}", max_tokens=6000))
         a = review(a, refs, TB_SHAPE)
         a["sources"] = [{"title": cite, "url": url} for cite, url in tb["papers"]]
         a["era"] = tb["era"]
         return {"status": "done", "articles": [a]}
     except Exception as e:  # noqa: BLE001
-        print(f"[throwback] failed: {e}")
+        print(f"[throwback] failed: {type(e).__name__}: {e}")
         return {"status": "error", "error": "Today's throwback wasn't filed."}
 
 
