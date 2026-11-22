@@ -1,6 +1,6 @@
 {
  "date": "2026-11-22",
- "created": "2026-11-22T07:58:42.717049-05:00",
+ "created": "2026-11-22T10:44:41.930083-05:00",
  "primerIndex": 1,
  "throwbackIndex": 1,
  "sections": {
@@ -612,8 +612,78 @@
    ]
   },
   "primer": {
-   "status": "error",
-   "error": "Today's primer wasn't filed."
+   "status": "done",
+   "articles": [
+    {
+     "headline": "How language models learn to chop text into reusable pieces",
+     "dek": "Before a neural network reads a sentence, a separate program cuts it into pieces from a fixed list, and the way that list is learned shapes what the model finds easy or hard.",
+     "body": [
+      "The problem: a neural network takes numbers, not text, so something must turn a string into a sequence of integers. Splitting on words fails because the vocabulary, the fixed list of pieces the model knows, would need millions of entries, and any new name, typo or compound word would be unknown. Splitting into single characters fails the other way. Nothing is ever unknown, but sequences become very long, and attention, the operation that compares every position with every other, costs time and memory that grow with the square of the length.",
+      "The intuition: think of shorthand writing. If you copy a lecture, you invent a symbol for phrases you write constantly and spell out rare words letter by letter. Byte-pair encoding (BPE), a method that learns a piece list by repeatedly merging the most common neighboring pair, does this automatically. It starts with the smallest alphabet, finds the most common neighboring pair, and gives that pair its own symbol. It repeats this many times. Common strings become single pieces, and rare strings fall back to smaller ones. The analogy breaks in two places. Shorthand is designed for meaning, but BPE only counts frequency, so pieces need not align with morphemes (the smallest meaningful parts of words, such as ‘un’ or ‘ing’). And BPE is frozen before the model trains, so the model cannot ask for a better split later.",
+      "The vocabulary. A corpus is the body of text used to learn the splits. A byte is one of 256 possible values; text is stored as bytes by an encoding such as Unicode Transformation Format 8-bit (UTF-8), a standard that writes each character as one to four bytes. A token is one piece from the vocabulary, and its integer is its id. A merge is a rule that fuses two adjacent pieces into one new piece. Pre-tokenization is a first pass that splits text into word-like chunks, so merges never cross word boundaries. An embedding is a learned vector of numbers that the model looks up for each token id. The embedding table stores one such vector per vocabulary entry.",
+      "A worked example. Use a toy corpus with word counts: ‘low’ five times, ‘lower’ twice, ‘newest’ six times, ‘widest’ three times. Start with single letters. That gives 15 + 10 + 36 + 18 = 79 symbols in total. Count adjacent pairs, weighted by word count. The pair (e, s) appears once in ‘newest’ (6 times) and once in ‘widest’ (3 times), so it scores 9. The pair (s, t) also scores 9, and we break ties by whichever appeared first, so merge e+s into ‘es’. Now the pair (es, t) scores 9, so merge it into ‘est’. Next, (l, o) scores 5 + 2 = 7, tied with (o, w) at 7, so merge l+o into ‘lo’. The symbol count falls to 70, then 61, then 54, since each merge removes one symbol per occurrence (9, 9, then 7). To encode a new word such as ‘lowest’, replay the merges in learned order: l,o,w,e,s,t becomes l,o,w,es,t, then l,o,w,est, then lo,w,est.",
+      "The general math. At each step, BPE picks the pair that maximizes its weighted count:\\[ (a^*, b^*) = \\arg\\max_{(a,b)} \\sum_{w} c(w)\\, n_w(a,b) \\]This says: choose the neighboring pair that, summed over all words, occurs most often. Here \\(w\\) is a distinct word, \\(c(w)\\) is how many times it occurs in the corpus (a count), \\(n_w(a,b)\\) is how many times pieces \\(a\\) and \\(b\\) sit side by side inside \\(w\\), \\(a\\) and \\(b\\) are any two candidate pieces, and \\((a^*, b^*)\\) is the winning pair. In the example, \\(c(\\text{newest})=6\\) and \\(n=1\\), plus \\(c(\\text{widest})=3\\) and \\(n=1\\), giving 9. The vocabulary size is \\(V = V_0 + M\\), where \\(V_0\\) is the starting alphabet size and \\(M\\) is the number of merges. The embedding table is a matrix of shape \\(V \\times d\\), where \\(d\\) is the vector width, so it holds \\(V d\\) parameters, the learned numbers of the model. For \\(V=128{,}000\\) and \\(d=4096\\), that is 524,288,000 parameters. Bigger \\(V\\) shortens sequences but enlarges this table and leaves rare tokens undertrained.",
+      "Common confusions. A token is not a word: it may be a word, a fragment, a space plus a word, or one byte. BPE training is separate from model training, and it uses no gradients (the signals that tell a neural network how to adjust its parameters), only counting. The tokenizer is fixed afterward, so changing it means retraining the model. Many weaknesses blamed on reasoning, such as counting letters or digit arithmetic, partly come from the model never seeing characters, only chunks. Merges are applied in the order they were learned, not by longest match. Finally, a leading space is usually part of the token, so ‘ cat’ and ‘cat’ have different ids.",
+      "Where it shows up today. GPT-2 (Generative Pre-trained Transformer 2), OpenAI’s 2019 language model, popularized byte-level BPE, where the base alphabet is the 256 bytes, so no input is ever unknown. Its vocabulary has 50,257 entries. Llama 3, Meta’s open-weight model family (one whose trained parameters are publicly released), uses about 128,000 tokens, up from 32,000 in Llama 2, mostly to shorten sequences, especially for non-English text. Some other open models use even larger vocabularies. Tools such as tiktoken (OpenAI’s fast tokenizer library) and SentencePiece (Google’s library that works on raw text without pre-splitting) implement these ideas. Research on byte-level models, such as Meta’s Byte Latent Transformer, tries to remove the fixed vocabulary by grouping bytes dynamically."
+     ],
+     "why": "Every capability and quirk of a language model, from cost per request to trouble with spelling and arithmetic, passes through the tokenizer first.",
+     "terms": [
+      {
+       "term": "Token",
+       "def": "One piece from the model's fixed vocabulary, which may be a word, a word fragment, or a single byte, and is represented by an integer id."
+      },
+      {
+       "term": "Merge",
+       "def": "A learned rule that fuses two adjacent pieces into one new vocabulary entry, chosen because that pair is frequent."
+      },
+      {
+       "term": "Byte-level BPE",
+       "def": "Byte-pair encoding whose starting alphabet is the 256 byte values, so any text can be encoded with no unknown tokens."
+      },
+      {
+       "term": "Pre-tokenization",
+       "def": "A first splitting step, often by spaces and punctuation, that stops merges from crossing word boundaries."
+      },
+      {
+       "term": "Embedding table",
+       "def": "A matrix with one learned vector per vocabulary entry; looking up a token id returns its vector."
+      }
+     ],
+     "sources": [
+      {
+       "title": "Neural Machine Translation of Rare Words with Subword Units (Sennrich, Haddow, Birch)",
+       "url": "https://arxiv.org/abs/1508.07909"
+      },
+      {
+       "title": "SentencePiece: A simple and language independent subword tokenizer and detokenizer (Kudo, Richardson)",
+       "url": "https://arxiv.org/abs/1808.06226"
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "Byte-pair encoding builds a vocabulary by repeatedly merging the most frequent adjacent pair of pieces, starting from bytes or characters.",
+      "The tokenizer is learned by counting before the model trains, then frozen, and the model only ever sees its token ids.",
+      "Vocabulary size trades shorter sequences against a larger embedding table and more rarely seen tokens."
+     ],
+     "deeper": [
+      "A neural network consumes numbers, not text, so something must turn a string into a sequence of integers. Recall four ideas. A corpus is the body of text used to learn the splits. A byte is one of 256 possible values, and Unicode Transformation Format 8-bit (UTF-8) is the standard that writes each character as one to four bytes. A token is one piece from the vocabulary, the fixed list of pieces the model knows, and its integer is its id. An embedding is a learned vector the model looks up for each token id.",
+      "Picture copying a lecture in shorthand. You invent a symbol for phrases you write constantly and spell rare words letter by letter. Byte-pair encoding (BPE), a method that learns a piece list by repeatedly merging the most common neighboring pair, does this automatically. It first runs pre-tokenization, a pass that splits text into word-like chunks so merges never cross word boundaries. It starts from the smallest alphabet and counts neighboring pairs. The most common pair becomes a new symbol, called a merge: a rule that fuses two adjacent pieces. It repeats this many times. Common strings become single pieces, and rare strings fall back to smaller ones.",
+      "The alternatives each fail. Whole words need millions of vocabulary entries, and any new name or typo is unknown. Single characters never meet an unknown, but sequences get long. Attention, the operation that compares every position with every other, grows in time and memory with the square of the length.",
+      "Each BPE step picks the pair with the highest weighted count:",
+      "\\[ (a^*, b^*) = \\arg\\max_{(a,b)} \\sum_{w} c(w)\\, n_w(a,b) \\]",
+      "This chooses the neighboring pair that occurs most often across the whole corpus. Here \\(w\\) is a distinct word. \\(c(w)\\) is how many times that word occurs, a count. \\(n_w(a,b)\\) is how many times pieces \\(a\\) and \\(b\\) sit side by side inside \\(w\\). \\(a\\) and \\(b\\) are any two candidate pieces, and \\((a^*, b^*)\\) is the winning pair.",
+      "The vocabulary size is",
+      "\\[ V = V_0 + M \\]",
+      "which says each merge adds exactly one new piece to the starting alphabet. \\(V\\) is the vocabulary size, \\(V_0\\) is the starting alphabet size, and \\(M\\) is the number of merges. The embedding table is a matrix of shape \\(V \\times d\\), where \\(d\\) is the vector width. It therefore holds \\(V d\\) parameters, the learned numbers of the model.",
+      "Now a worked example. Take the words ‘low’ ×5, ‘lower’ ×2, ‘newest’ ×6 and ‘widest’ ×3. As single letters they total 15 + 10 + 36 + 18 = 79 symbols. The pair (e, s) occurs once in ‘newest’ (6 times) and once in ‘widest’ (3 times), so it scores 9. The pair (s, t) also scores 9, and ties go to the pair that appeared first, so we merge e+s into ‘es’. Each occurrence loses one symbol, so the total falls to 70. Next, (es, t) scores 9, so we merge it into ‘est’, and the total falls to 61. Then (l, o) scores 5 + 2 = 7, tied with (o, w), so we merge l+o into ‘lo’, and the total falls to 54. To encode ‘lowest’, replay the merges in learned order. The sequence l,o,w,e,s,t becomes l,o,w,es,t, then l,o,w,est, then lo,w,est. For a larger case, \\(V=128{,}000\\) and \\(d=4096\\) give 524,288,000 embedding parameters.",
+      "Compared with earlier approaches, BPE sits between words and characters. Byte-level BPE, popularized by GPT-2 (Generative Pre-trained Transformer 2, OpenAI’s 2019 language model), uses the 256 bytes as its alphabet, so no input is ever unknown. Its vocabulary has 50,257 entries. Llama 3, Meta’s open-weight model family (one whose trained parameters are publicly released), uses about 128,000, up from 32,000 in Llama 2. The goal is shorter sequences, especially for non-English text. Tools such as tiktoken (OpenAI’s fast tokenizer library) and SentencePiece (Google’s library that works on raw text without pre-splitting) implement these ideas.",
+      "The limitations follow from the analogy breaking in two places. Shorthand is designed for meaning, but BPE only counts frequency. Pieces therefore need not align with morphemes, the smallest meaningful parts of words, such as ‘un’ or ‘ing’. And BPE is frozen before training, so the model cannot ask for a better split. Changing the tokenizer means retraining the model. BPE training uses no gradients, the signals that tell a network how to adjust its parameters. It only counts.",
+      "A token is not a word. It may be a fragment, a space plus a word, or one byte. A leading space is usually part of the token, so ‘ cat’ and ‘cat’ have different ids. Merges are applied in learned order, not by longest match. Some weaknesses blamed on reasoning, such as counting letters or digit arithmetic, partly come from the model seeing chunks rather than characters.",
+      "Vocabulary size is a trade-off. A bigger \\(V\\) shortens sequences but enlarges the embedding table and leaves rare tokens undertrained. Research on byte-level models, such as Meta’s Byte Latent Transformer, tries to remove the fixed vocabulary by grouping bytes dynamically. Whether that can match fixed vocabularies at scale remains open."
+     ]
+    }
+   ]
   },
   "throwback": {
    "status": "done",
