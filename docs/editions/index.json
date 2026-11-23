@@ -1,10 +1,11 @@
 {
  "editions": [
+  "2026-11-23",
   "2026-11-22",
   "2026-11-21"
  ],
- "primerCursor": 2,
- "throwbackCursor": 2,
+ "primerCursor": 3,
+ "throwbackCursor": 3,
  "curriculum": [
   "The transformer revisited: attention as a soft dictionary lookup",
   "Tokenization and byte-pair encoding",

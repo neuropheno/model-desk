@@ -1,0 +1,603 @@
+{
+ "date": "2026-11-23",
+ "created": "2026-11-23T17:08:01.586071-05:00",
+ "primerIndex": 2,
+ "throwbackIndex": 2,
+ "sections": {
+  "architectures": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "Qwen4-Max swaps most attention layers for a fixed-size notebook and bolts on a giant lookup table",
+     "dek": "Alibaba's new flagship language model mixes three kinds of memory: a compressed running summary, a page-finding index for exact recall, and a huge table of short word-sequence vectors.",
+     "body": [
+      "<cite index=\"32-2\">Alibaba's Qwen team launched Qwen4-Max on November 16.</cite> It is a flagship language model that also reads images and video. It is a sparse mixture of experts (MoE), a layer design that sends each token to a few of many smaller networks. <cite index=\"30-7\">The model has 2.4 trillion backbone parameters, 71 billion activated per token, and an extra 328 billion n-gram embedding parameters.</cite> That means only about 3% of the backbone runs for any one token (71 divided by 2,400). <cite index=\"33-12\">Alibaba says this is about 25% fewer active parameters than Qwen3.8-Max, which has the same backbone size.</cite>",
+      "Recall that a key-value cache stores the keys and values of earlier tokens so they are not recomputed. It grows with every token, and attention must read all of it. Linear attention avoids this by squeezing history into a fixed-size state matrix. The residual stream is the running vector that each layer reads from and adds to.",
+      "Picture a notebook with a fixed number of pages, plus an index for flipping to exact pages. <cite index=\"38-5\">Qwen4-Max repeats three Gated DeltaNet layers, then one Qwen Sparse Attention layer.</cite> Gated DeltaNet (GDN) is the notebook. It updates its state like this:",
+      "\\[ S_t = \\alpha_t S_{t-1}\\,(I - \\beta_t k_t k_t^{\\top}) + \\beta_t v_t k_t^{\\top} \\]",
+      "This rule first erases what the state stored under the current key, then writes the new value. Here \\(S_t\\) is the state matrix (value size by key size), \\(\\alpha_t\\) is a decay gate between 0 and 1, \\(\\beta_t\\) is a write strength between 0 and 1, \\(k_t\\) is the key vector, \\(v_t\\) is the value vector, and \\(I\\) is the identity matrix. If \\(\\alpha_t=\\beta_t=1\\) and \\(k_t\\) has length 1, then \\(S_t k_t = v_t\\). The old content under that key is wiped, and the new value takes its place. Qwen Sparse Attention (QSA) is the index. <cite index=\"52-3\">It selects context at micro-block level rather than token by token.</cite> <cite index=\"50-4\">Gated Residual widens the residual stream to four branches with read and write gates, which Qwen says improves training stability.</cite> <cite index=\"57-4,57-5\">N-gram embedding uses short token sequences ending at each token as keys into embedding tables. This adds capacity with almost no extra compute per token, and the fixed addressing allows offloading to host memory.</cite>",
+      "<cite index=\"38-6\">Qwen reports that Qwen4-Max-Base has 5% to 13% lower bits per byte than Qwen3.8-Max-Base on its in-house knowledge, code, question-answering and science evaluations.</cite> Bits per byte measures how well a model predicts text, and lower is better. These are the lab's own numbers. <cite index=\"38-2\">The weights are not released, though smaller Qwen4 models are promised as open source.</cite> Outsiders therefore cannot yet test how much of the gain comes from each of the four changes."
+     ],
+     "why": "It is a flagship-scale example of the field moving to hybrid compressed-plus-sparse attention and cheap lookup-based capacity instead of simply activating more experts.",
+     "terms": [
+      {
+       "term": "Mixture of experts (MoE)",
+       "def": "A layer that sends each token to a few of many smaller feed-forward networks, so only part of the model runs per token."
+      },
+      {
+       "term": "Gated DeltaNet (GDN)",
+       "def": "A linear-attention layer that keeps a fixed-size memory matrix and, at each step, erases old content under a key before writing a new value."
+      },
+      {
+       "term": "Qwen Sparse Attention (QSA)",
+       "def": "Qwen's attention layer that uses a lightweight index to pick micro-blocks of context and attends only to those."
+      },
+      {
+       "term": "N-gram embedding",
+       "def": "A big table of vectors looked up by short token sequences ending at the current token, adding capacity without much compute."
+      },
+      {
+       "term": "Residual stream",
+       "def": "The running vector in a transformer that each layer reads from and adds its output to."
+      }
+     ],
+     "sources": [
+      {
+       "title": "Qwen4-Max: Your New Teammate Has Arrived",
+       "url": "https://qwen.ai/blog?id=qwen4-max"
+      },
+      {
+       "title": "Qwen/Qwen3.8-Flash-Next (Hugging Face model card)",
+       "url": "https://huggingface.co/Qwen/Qwen3.8-Flash-Next"
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "Qwen4-Max stacks three Gated DeltaNet layers for each Qwen Sparse Attention layer, so only a quarter of the layers need exact long-range lookup.",
+      "It adds a 328-billion-parameter n-gram lookup table and a four-branch gated residual stream on top of a 2.4-trillion-parameter mixture of experts that activates 71 billion parameters per token.",
+      "The efficiency and quality claims come from Alibaba's own evaluations, and the weights are not yet public."
+     ],
+     "deeper": [
+      "Start with the prerequisites. A token is a small chunk of text, such as a word piece. Attention lets each new token look back at earlier tokens. To avoid recomputing, models keep a key-value cache, which stores the keys and values of earlier tokens. It grows with every token, and attention must read all of it. The residual stream is the running vector that each layer reads from and adds to. A mixture of experts (MoE) is a layer that sends each token to a few of many smaller networks.",
+      "Alibaba's Qwen team launched Qwen4-Max on November 16. It is a flagship language model that also reads images and video, and it is a sparse MoE. It has 2.4 trillion backbone parameters (the learned numbers in the main network), with 71 billion activated per token. Only about 3% of the backbone runs for any one token, since 71 divided by 2,400 is about 0.03. It also has 328 billion extra parameters in n-gram embedding tables, explained below.",
+      "Now the mechanism. Picture a notebook with a fixed number of pages, plus an index for flipping to exact pages. Qwen4-Max repeats three Gated DeltaNet (GDN) layers, then one Qwen Sparse Attention (QSA) layer. GDN is the notebook. It uses linear attention, which squeezes all history into a fixed-size state matrix instead of a growing cache. QSA is the index. It selects context in micro-blocks rather than token by token, so it reads only the relevant parts of the history.",
+      "The notebook's update rule is:",
+      "\\[ S_t = \\alpha_t S_{t-1}\\,(I - \\beta_t k_t k_t^{\\top}) + \\beta_t v_t k_t^{\\top} \\]",
+      "This rule first erases what the state stored under the current key, then writes the new value. Here \\(S_t\\) is the state matrix after token \\(t\\), with shape value size by key size. \\(\\alpha_t\\) is a decay gate between 0 and 1 that fades old memory. \\(\\beta_t\\) is a write strength between 0 and 1. \\(k_t\\) is the key vector, with length equal to the key size. \\(v_t\\) is the value vector, with length equal to the value size. \\(I\\) is the identity matrix, which changes nothing when multiplied. \\(k_t^{\\top}\\) is \\(k_t\\) written as a row.",
+      "A small example shows the effect. Let \\(k=(1,0)\\) and \\(v=(3,5)\\). Let the old state have rows \\((2,7)\\) and \\((4,9)\\), so the old value stored under \\(k\\) is its first column, \\((2,4)\\). Set \\(\\alpha=1\\). Here \\(I-\\beta kk^{\\top}\\) is a diagonal matrix with entries \\(1-\\beta\\) and 1.",
+      "With \\(\\beta=1\\), the first column is zeroed, leaving rows \\((0,7)\\) and \\((0,9)\\). Adding \\(vk^{\\top}\\), which has rows \\((3,0)\\) and \\((5,0)\\), gives rows \\((3,7)\\) and \\((5,9)\\). Then \\(S k=(3,5)=v\\). The old content was wiped and replaced. With \\(\\beta=0.5\\), the erase step halves the first column to \\((1,2)\\). The write adds \\((1.5,2.5)\\), giving \\((2.5,4.5)\\). That lands halfway between old and new, and the second column is untouched.",
+      "Three more changes surround this. Gated Residual widens the residual stream to four branches with read and write gates, which Qwen says improves training stability. N-gram embedding treats the short token sequence ending at each token (an n-gram) as a key into embedding tables, which are lookup tables of learned vectors. This adds capacity with almost no extra compute per token. The address depends only on the input tokens, so it is known in advance. That fixed addressing allows the tables to be offloaded to host memory, the computer's main memory rather than the accelerator's.",
+      "Compared with earlier approaches, a full-attention model pays memory and reading cost that grow with context length. Simple linear attention keeps memory fixed but only adds new entries, so old and new content collide. The delta rule above erases before writing, which reduces that collision. Keeping one index layer in every four restores exact lookup that a fixed notebook cannot guarantee. Alibaba says Qwen4-Max has about 25% fewer active parameters than Qwen3.8-Max, which has the same backbone size.",
+      "On quality, Qwen reports that Qwen4-Max-Base has 5% to 13% lower bits per byte than Qwen3.8-Max-Base on its in-house knowledge, code, question-answering and science evaluations. Bits per byte measures how well a model predicts text, and lower is better. These are the lab's own numbers.",
+      "The open questions are practical. The weights are not released, though smaller Qwen4 models are promised as open source. Outsiders therefore cannot yet test how much of the gain comes from each of the four changes. They also cannot check whether the notebook-and-index design holds up on tasks that need exact recall from very long inputs."
+     ]
+    }
+   ]
+  },
+  "training": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "A new training trick gives most of the credit for a right answer to the few words where the model could have gone wrong",
+     "dek": "A paper posted today argues that when a language model is rewarded for a correct math answer, almost all of the learning signal should go to a handful of uncertain tokens, and it reports large gains over a standard baseline.",
+     "body": [
+      "Researchers including Hanqing Zhao and Dacheng Tao posted CreditFilter on arXiv on November 23, 2026. It is a change to reinforcement learning with verifiable rewards (RLVR), a post-training method where a model writes many answers and is rewarded only when an automatic checker confirms the final answer. They trained Qwen3-8B-Base, an eight-billion-parameter open base model, and <cite index=\"55-2\">averaged over three seeds it beat the DAPO baseline by 7.7 points on MATH500 and by 10.5 and 9.1 points on AIME24 and AIME25.</cite> DAPO is a widely used recipe for this kind of training, and MATH500 and AIME are math test sets.",
+      "Here is the reminder. In critic-free RLVR, the model samples a group of answers and scores each one. An answer's advantage is its reward minus the group average, divided by the group's spread. Suppose four samples score 1, 0, 0, 0. The mean is 0.25 and the standard deviation is about 0.433. The correct answer gets advantage about +1.73 and each wrong one about −0.58. <cite index=\"7-4\">Standard methods then give that one advantage to every token</cite> in the answer, so a filler word is rewarded as much as the decisive step. Earlier work, such as the 80/20 paper, <cite index=\"45-3\">found that a minority of high-entropy 'forking' tokens at critical decision points account for nearly all the gains.</cite> Entropy here means how unsure the model is about the next token.",
+      "Picture a long drive in which only a few junctions decide whether you reach the destination. You would spend your learning effort at the junctions. CreditFilter does this by ranking the tokens within each response by entropy. It then <cite index=\"55-1\">weights each token by an exponential window over that rank.</cite> The authors show that <cite index=\"55-6\">the chance that a token is a fork decays exponentially with its entropy rank</cite> on Qwen3-8B-Base. Their window is matched to that decay. A simplified sketch of the update is \\[ g \\approx \\sum_{i}\\sum_{t} e^{-q_{i,t}/\\lambda_c}\\,A_i\\,\\nabla_\\theta \\log \\pi_\\theta(y_{i,t}\\mid y_{i,<t}). \\] This pushes up or down the probability of each token, with the strongest push at the most uncertain tokens. Here i indexes the sampled answers and t the token positions. A_i is the answer's advantage, a single number. q is the token's entropy rank inside its own answer, where 0 is the most uncertain. λ_c is the window width for class c, correct or wrong. π_θ is the model, with parameter vector θ, and y_{i,t} is the token at position t. If λ_c is 2, ranks 0, 1, 2 and 4 get weights 1, 0.61, 0.37 and 0.14. The paper's exact weight form may differ from this sketch.",
+      "On cost and results, <cite index=\"55-9\">CreditFilter needs no extra forward passes</cite> and uses damping tricks for stability. The ablations say <cite index=\"55-12\">ranking within each response rather than across the batch matters, as does matching the window's decay rate to the measured envelope.</cite> The caveats are real. The evidence is one base model, three seeds and math tasks. The AIME sets have only 30 problems each. The per-seed gaps vary a lot; on MATH500 the difference is +0.077 with a standard deviation of 0.122. Whether the gain holds on other model families, on code, or against stronger baselines is unproven."
+     ],
+     "why": "Better credit assignment could make reinforcement learning on reasoning tasks cheaper and more effective without training a separate value network.",
+     "terms": [
+      {
+       "term": "Reinforcement learning with verifiable rewards (RLVR)",
+       "def": "Post-training where a model is rewarded only when an automatic checker confirms its final answer is correct."
+      },
+      {
+       "term": "DAPO",
+       "def": "A popular critic-free reinforcement learning recipe for training reasoning models, used here as the baseline."
+      },
+      {
+       "term": "American Invitational Mathematics Examination (AIME)",
+       "def": "A hard high-school math competition whose 30-problem yearly sets serve as a benchmark for reasoning models."
+      },
+      {
+       "term": "MATH500",
+       "def": "A 500-problem subset of competition-style math questions used to test models."
+      },
+      {
+       "term": "Entropy",
+       "def": "A measure of how uncertain the model is about its next token; high entropy means many plausible choices."
+      }
+     ],
+     "sources": [
+      {
+       "title": "CreditFilter: Calibrated Token Weights over the Within-Response Entropy Rank for RLVR (arXiv 2611.27227)",
+       "url": "https://arxiv.org/abs/2611.27227"
+      },
+      {
+       "title": "Beyond the 80/20 Rule: High-Entropy Minority Tokens Drive Effective Reinforcement Learning for LLM Reasoning",
+       "url": "https://arxiv.org/pdf/2506.01939"
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "Standard verifiable-reward training gives every token in an answer the same credit, even though only a few uncertain tokens decide the outcome.",
+      "CreditFilter ranks tokens by uncertainty within each answer and weights credit with an exponentially decaying window.",
+      "On one model and math tests it beat DAPO by roughly 8 to 10 points, but the evidence is narrow."
+     ],
+     "deeper": [
+      "Start with the setup. Reinforcement learning with verifiable rewards (RLVR) is a post-training method. The model writes many answers to a problem, and an automatic checker gives reward 1 for a correct final answer and 0 otherwise. Recall that a token is a word or word fragment, and that entropy measures how unsure the model is about the next token. Low entropy means it is nearly certain. High entropy means several continuations are plausible.",
+      "Critic-free methods, which train without a separate learned value model, sample a group of answers per problem and compare them. The advantage of answer \\(i\\) is",
+      "\\[ A_i = \\frac{r_i - \\bar r}{s}. \\]",
+      "This says how much better than its group an answer did, in units of the group's spread. Here \\(r_i\\) is the reward of answer \\(i\\), \\(\\bar r\\) is the group's mean reward, and \\(s\\) is the group's standard deviation (a measure of spread). All three are single numbers. With rewards 1, 0, 0, 0, the mean is 0.25 and the standard deviation is about 0.433. The correct answer gets about +1.73, and each wrong one gets about −0.58.",
+      "The problem is that standard recipes, including DAPO (a widely used RLVR training recipe), give that one number to every token in the answer. A filler word is credited as much as the decisive step. Earlier work, the 80/20 paper, found that a minority of high-entropy \"forking\" tokens account for nearly all the gains. Picture a long drive where only a few junctions decide whether you arrive. You would spend your learning effort there.",
+      "CreditFilter, posted on arXiv (a public preprint server) by Hanqing Zhao, Dacheng Tao and colleagues, does this in three steps. First, within each response, it ranks tokens by entropy, with rank 0 the most uncertain. Second, it gives each token a weight that falls off exponentially with that rank. Third, it multiplies the answer's advantage by that weight. The authors report that on Qwen3-8B-Base, an eight-billion-parameter open base model, the chance that a token is a fork decays exponentially with its entropy rank. They match the window to that decay.",
+      "A simplified sketch of the update is",
+      "\\[ g \\approx \\sum_{i}\\sum_{t} e^{-q_{i,t}/\\lambda_c}\\,A_i\\,\\nabla_\\theta \\log \\pi_\\theta(y_{i,t}\\mid y_{i,<t}). \\]",
+      "This raises or lowers the probability of each token, with the strongest push at the most uncertain tokens. Here \\(i\\) indexes the sampled answers and \\(t\\) indexes token positions. \\(A_i\\) is the advantage, one number per answer. \\(q_{i,t}\\) is the token's entropy rank within its own answer, a non-negative integer. \\(\\lambda_c\\) is the window width for class \\(c\\), correct or wrong. \\(\\pi_\\theta\\) is the model, a probability distribution over the next token, with parameter vector \\(\\theta\\). \\(y_{i,t}\\) is the token at position \\(t\\), and \\(y_{i,<t}\\) are the tokens before it. The gradient \\(\\nabla_\\theta\\) is the direction in parameter space that most increases the log-probability of that token. The paper's exact weight form may differ from this sketch.",
+      "Take \\(\\lambda_c = 2\\). Ranks 0, 1, 2 and 4 get weights 1, 0.61, 0.37 and 0.14. In the correct answer above, with \\(A = 1.73\\), the push is about 1.73 at rank 0, 1.05 at rank 1, 0.64 at rank 2 and 0.23 at rank 4. In a wrong answer, the most uncertain token is pushed down by 0.58, and a rank-4 token by only about 0.08. Standard methods would apply 1.73 or −0.58 to every token.",
+      "Compared with earlier approaches, the 80/20 finding says where learning matters. CreditFilter turns that into a soft weighting rather than a hard cutoff. It needs no extra forward passes, meaning no additional runs of the model to compute scores, and it uses damping tricks for stability. The ablations say that ranking within each response, rather than across the batch, matters. So does matching the window's decay rate to the measured one.",
+      "The results are averaged over three seeds, meaning three runs with different random starting conditions. CreditFilter beat DAPO by 7.7 points on MATH500, a 500-problem math test set. It beat DAPO by 10.5 and 9.1 points on the 2024 and 2025 sets of the American Invitational Mathematics Examination (AIME), a hard high-school contest.",
+      "The caveats are real. The evidence covers one base model, three seeds and math tasks. Each AIME set has only 30 problems. Per-seed gaps vary a lot: on MATH500 the mean difference is +0.077, with a standard deviation of 0.122. Whether the gain holds on other model families, on code, or against stronger baselines is unproven."
+     ]
+    }
+   ]
+  },
+  "theory": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "Self-improving AI agents may stall because their scorecards are too blurry to see small gains",
+     "dek": "A new paper argues that agents which rewrite their own prompts and tools stop improving because noisy evaluation can't spot real progress, not because they run out of good ideas.",
+     "body": [
+      "On 17 November 2026, Yuanhao Zeng, Kan Ren and nine co-authors posted 'The Resolution Hypothesis'. <cite index=\"47-11\">They study agent evolution, where model weights stay frozen and only external state (prompts, memories, skills, harnesses) evolves.</cite> <cite index=\"47-1\">Their claim is that evolution stalls not because methods fail to propose better artifacts, but because noisy evaluations cannot reliably identify them.</cite> <cite index=\"49-3\">They tested seven evolution methods and six models, using over 10M calls to a large language model (LLM), a network that predicts text.</cite>",
+      "The reminder: a benchmark score is an estimate, not a fact. If you test on n pass/fail tasks, your measured accuracy wobbles from sample to sample. Its typical wobble is the standard error, \\(\\mathrm{SE} = \\sqrt{p(1-p)/n}\\). This says that fewer tasks, or accuracy near 50%, means a blurrier score. Here p is true accuracy (a number from 0 to 1) and n is the number of tasks. Take p = 0.6 and n = 100. Then 0.6 × 0.4 = 0.24, divided by 100 is 0.0024, and the square root is about 0.049. That is roughly 5 percentage points of noise. A real 1-point gain disappears inside it.",
+      "Now picture the evolution loop as a proposer and a selector. The proposer suggests an edit, such as a new prompt. The selector scores it and keeps it if the score goes up. The paper's idea is that the selector has a resolution: the smallest true gain it can reliably see. <cite index=\"47-8\">The Resolution Hypothesis predicts that evolution can accumulate an improvement only if the true improvement exceeds the resolution.</cite> As a rough picture of my own, not the paper's formula, a change survives when \\(\\Delta > 2\\,\\mathrm{SE}\\). This says a gain must clearly stand out from the noise. Here \\(\\Delta\\) is the true accuracy gain of an edit, and 2 is a rule-of-thumb confidence factor. <cite index=\"47-6\">When resolution is too low, true improvements are lost in noise, while large, easily detectable changes can dominate even if they exploit evaluation shortcuts.</cite>",
+      "On results, <cite index=\"49-4\">at the candidate level, helpful artifacts exist, but selection is no better than random at telling them from harmful ones, so errors accumulate across rounds.</cite> <cite index=\"48-9\">A controlled contrast shows evolution succeeds when an artifact's gain exceeds the resolution, and fails when only small, task-specific gains remain.</cite> The caveats are real. This is a hypothesis backed by one preprint, and the setting keeps model weights frozen. I could only confirm the candidate-level finding in detail. I also could not confirm how much higher-resolution selection helps. The authors' takeaway is that <cite index=\"47-7\">developing higher-resolution feedback may be as important as developing more powerful evolution algorithms.</cite>"
+     ],
+     "why": "If the bottleneck is measurement rather than ideas, then better evaluation design, with more tasks and less noise, becomes a core lever for self-improving systems.",
+     "terms": [
+      {
+       "term": "Agent evolution",
+       "def": "Repeatedly rewriting an agent's prompts, memories, skills or tool code while the underlying model weights stay frozen."
+      },
+      {
+       "term": "Large language model (LLM)",
+       "def": "A neural network trained to predict the next piece of text, used here as the engine inside agents."
+      },
+      {
+       "term": "Standard error",
+       "def": "The typical amount a measured average, such as accuracy on n tasks, would wobble if you re-sampled the tasks."
+      },
+      {
+       "term": "Resolution",
+       "def": "The smallest true improvement an evaluation can reliably distinguish from noise."
+      }
+     ],
+     "sources": [
+      {
+       "title": "The Resolution Hypothesis: Agent Evolution's Key Is Identifying Improvements (arXiv abstract)",
+       "url": "https://arxiv.org/abs/2611.23068"
+      },
+      {
+       "title": "The Resolution Hypothesis (arXiv HTML)",
+       "url": "https://arxiv.org/html/2611.23068"
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "A benchmark score is a noisy estimate, so small real improvements can hide inside the noise.",
+      "The paper says self-improving agents stall because their selection step cannot tell good edits from bad ones.",
+      "Gains smaller than the evaluation's resolution get lost, while big, easy-to-detect changes win, even when they exploit shortcuts."
+     ],
+     "deeper": [
+      "Picture trying to track a 1-kilogram weight loss on a bathroom scale that jitters by 5 kilograms. You would never know whether any single change in diet worked. A new preprint, \"The Resolution Hypothesis\" by Yuanhao Zeng, Kan Ren and nine co-authors, argues that self-improving AI agents face this same problem.",
+      "Some prerequisites first. A model's weights are the learned numbers inside the network. In agent evolution, the weights stay frozen. Only external state changes: prompts (instructions given to the model), memories (notes it can reread), skills (reusable procedures), and harnesses (the code wrapping the model that calls tools and manages steps). A benchmark is a fixed set of tasks used to score an agent. A large language model (LLM) is a network that predicts text, and it powers these agents.",
+      "The mechanism is a two-part loop. The proposer suggests an edit, such as a rewritten prompt. The selector runs the edited agent on benchmark tasks and keeps the edit if the score rises. The authors' claim is that proposers are not the bottleneck. Good edits do exist, but the selector cannot reliably tell them from bad ones. They call the smallest true gain the selector can reliably see its resolution. Evolution can accumulate an improvement only if the true gain exceeds that resolution.",
+      "Now the mathematics. A benchmark score is an estimate, not a fact. Test on n pass/fail tasks and the measured accuracy wobbles from sample to sample. Its typical wobble is the standard error (SE):",
+      "\\[\n\\mathrm{SE} = \\sqrt{\\frac{p(1-p)}{n}}\n\\]",
+      "This says that fewer tasks, or accuracy near 50%, makes the score blurrier. Here \\(p\\) is the true accuracy, a number from 0 to 1, and \\(n\\) is the number of tasks, a positive whole number.",
+      "As a rough picture of my own, not the paper's formula, an edit survives selection when:",
+      "\\[\n\\Delta > 2\\,\\mathrm{SE}\n\\]",
+      "This says a gain must clearly stand out from the noise. Here \\(\\Delta\\) is the true accuracy gain of the edit, on the same 0-to-1 scale as \\(p\\). The 2 is a rule-of-thumb confidence factor. \\(\\mathrm{SE}\\) is the standard error above.",
+      "Here is a worked example. Take \\(p = 0.6\\) and \\(n = 100\\). Then \\(0.6 \\times 0.4 = 0.24\\), and \\(0.24 / 100 = 0.0024\\). The square root is about 0.049, or roughly 5 percentage points. Twice that is about 10 points, so a real 1-point gain is invisible. To make \\(2\\,\\mathrm{SE}\\) equal 0.01, we need \\(\\mathrm{SE} = 0.005\\). Then \\(n = 0.24 / 0.005^2 = 0.24 / 0.000025 = 9600\\) tasks. Comparing two noisy scores is usually harsher still, because both carry noise. Scoring both on the same tasks softens this somewhat.",
+      "This has a nasty side effect. When resolution is low, small true improvements get lost in noise. Large, easily detected changes can still win, even if they merely exploit shortcuts in the evaluation. The loop then drifts toward gaming the scorecard instead of getting better.",
+      "The evidence comes from a large study: seven evolution methods and six models, using over 10 million LLM calls. At the candidate level, helpful artifacts exist, but selection is no better than random at separating them from harmful ones. Errors then accumulate across rounds. A controlled contrast shows evolution succeeds when an artifact's gain exceeds the resolution. It fails when only small, task-specific gains remain.",
+      "Compared with earlier approaches, this shifts the emphasis. Much of the work on evolving agents has focused on cleverer proposers. Training weights with gradients gives a rich, per-parameter signal. Evolving external state offers only a score, which is a thin signal. The authors suggest that developing higher-resolution feedback may be as important as developing more powerful evolution algorithms.",
+      "The caveats are real. This is a hypothesis backed by one preprint, and the setting keeps model weights frozen, so it may not carry over to methods that update weights. I could only confirm the candidate-level finding in detail. I could not confirm how much higher-resolution selection helps in practice. The \\(\\Delta > 2\\,\\mathrm{SE}\\) rule is my own illustration, so treat it as intuition, not as the paper's result."
+     ]
+    }
+   ]
+  },
+  "practice": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "A popular model server now measures free GPU memory after warmup, and its cache grows by default",
+     "dek": "The open-source server vLLM changed two memory defaults on 16 November, which gives most models a bigger working memory and may cost some prefix reuse.",
+     "body": [
+      "On 16 November 2026, the vLLM project released version 0.34.0. <cite index=\"24-2\">vLLM is an open-source server many teams use to run large language models on their own graphics processing units (GPUs), the chips that do the math.</cite> <cite index=\"24-1\">The release has 1,061 commits from 412 contributors.</cite> <cite index=\"29-2\">Its headline change is that vLLM sizes its cache from the memory actually free after warmup.</cite> <cite index=\"29-3\">A second change is that the default block size is now 64 instead of 16.</cite>",
+      "Recall that a key-value (KV) cache stores the keys and values of earlier tokens, so the model doesn't recompute them for every new token. Think of it as a parking lot. Each conversation rents whole bays, and the bays are the blocks. Every token costs the same number of bytes, so the number of bays decides how many conversations fit at once.",
+      "The old method guessed how much memory to hand the cache before the engine had finished warming up. <cite index=\"30-6\">Until this release, vLLM sized the KV cache before CUDA graph capture.</cite> (CUDA graph capture records a fixed sequence of GPU operations so it can be replayed quickly.) The guess had to leave a safety margin. Version 0.34 instead measures what is left after warmup and gives the cache nearly all of it. The cost per token is \\[ M = 2 \\cdot L \\cdot n_{kv} \\cdot d_h \\cdot b \\] This formula counts the bytes of cache one token needs. Here \\(L\\) is the number of layers, \\(n_{kv}\\) is the number of key-value heads per layer, \\(d_h\\) is the width of each head, and \\(b\\) is bytes per number. The factor 2 covers keys plus values. For a model with 32 layers, 8 heads, width 128 and 2-byte numbers, \\(M = 2 \\cdot 32 \\cdot 8 \\cdot 128 \\cdot 2 = 131{,}072\\) bytes, or 128 KiB per token. A 20 GiB cache then holds 163,840 tokens.",
+      "Block size has a catch. <cite index=\"32-9,32-10\">Prefix caching reuses only complete blocks, so a shared 40-token system prompt yields no reusable block at size 64, while size 16 can reuse 32 of its tokens.</cite> Prefix caching means a new request skips recomputing a prompt start that an earlier request already processed.",
+      "The release notes give one example. <cite index=\"37-7\">MiniMax-M3 on an H200 GPU grows from 433k to 672k cache tokens.</cite> That is about 55 percent more room. The caveats are real, though. <cite index=\"30-3,30-4\">One write-up notes that the pull request itself says a 16-versus-64 serving benchmark was still missing.</cite> <cite index=\"37-10\">The release notes also warn that per-token decode latency can rise on some models.</cite> Agent workloads that depend on short shared prefixes should test the old block size before upgrading. <cite index=\"29-4\">Passing --block-size 16 keeps the old behavior.</cite>"
+     ],
+     "why": "Serving defaults decide how many users a GPU can hold at once, so a quiet default change can move cost and latency for every team running open-weight models.",
+     "terms": [
+      {
+       "term": "Key-value (KV) cache",
+       "def": "Stored keys and values of earlier tokens, kept so the model does not recompute them for each new token."
+      },
+      {
+       "term": "Graphics processing unit (GPU)",
+       "def": "A chip with many parallel cores that runs the matrix math behind neural networks."
+      },
+      {
+       "term": "Block size",
+       "def": "The number of tokens in one fixed chunk of cache memory, which is the unit the server allocates and reuses."
+      },
+      {
+       "term": "Prefix caching",
+       "def": "Reusing the cached work for the start of a prompt that an earlier request already processed."
+      },
+      {
+       "term": "CUDA graph",
+       "def": "A recorded sequence of GPU operations that can be replayed with little launch overhead."
+      }
+     ],
+     "sources": [
+      {
+       "title": "vLLM v0.34.0 release notes",
+       "url": "https://github.com/vllm-project/vllm/releases/tag/v0.34.0"
+      },
+      {
+       "title": "vLLM 0.34 Stops Reserving 8% of Your GPU: Extensible KV Cache, the Block Size 64 Default",
+       "url": "https://dev.to/wolfsea2357/vllm-034-stops-reserving-8-of-your-gpu-extensible-kv-cache-the-block-size-64-default-and-what-2f8g"
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "vLLM 0.34 sizes its key-value cache from memory measured free after warmup, so the same GPU holds more cached tokens.",
+      "The default block size rose from 16 to 64 tokens, and prefix caching reuses only full blocks, so short shared prompts may lose reuse.",
+      "The headline gain comes from one model on one GPU, and the block-size choice had no serving benchmark behind it, so measure your own traffic."
+     ],
+     "deeper": [
+      "Start with the prerequisites. A token is a small chunk of text, such as a word or word fragment, that the model reads one at a time. Recall that a key-value (KV) cache stores the keys and values of earlier tokens, so the model doesn't recompute them for every new token. vLLM is an open-source server that many teams use to run large language models on their own graphics processing units (GPUs), the chips that do the math. On 16 November 2026 it released version 0.34.0, which changes how much memory the cache gets.",
+      "Think of the cache as a parking lot. Each conversation rents whole bays, and the bays are called blocks. Every token costs the same number of bytes, so the number of bays decides how many conversations fit at once.",
+      "Now the mechanism. Before this release, vLLM sized the cache before CUDA graph capture. Compute Unified Device Architecture (CUDA) is NVIDIA's platform for programming its GPUs, and graph capture records a fixed sequence of GPU operations so it can be replayed quickly. Capture itself uses memory, so vLLM had to guess how much to leave free. A guess needs a safety margin, and the margin sat unused.",
+      "Version 0.34 reverses the order. It finishes warmup, measures the memory that is actually free, and gives the cache nearly all of it. Think of surveying the lot after the fences are built, instead of before.",
+      "The math starts with the cost of one token:",
+      "\\[ M = 2 \\cdot L \\cdot n_{kv} \\cdot d_h \\cdot b \\]",
+      "This counts the bytes of cache that one token needs. \\(L\\) is the number of layers, the stacked processing stages of the model. \\(n_{kv}\\) is the number of key-value heads per layer, where a head is one parallel attention channel. \\(d_h\\) is the width of each head, the number of values it stores per token. \\(b\\) is bytes per number. The factor 2 covers keys plus values.",
+      "Capacity then follows by division:",
+      "\\[ N = \\frac{C}{M} \\]",
+      "This says the number of cached tokens is the cache budget divided by the cost per token. \\(N\\) is the number of tokens that fit, \\(C\\) is the cache budget in bytes, and \\(M\\) is the bytes per token from above. The new release raises \\(C\\) without changing \\(M\\).",
+      "Here is a worked example. Take 32 layers, 8 heads, width 128, and 2-byte numbers. Then \\(M = 2 \\cdot 32 \\cdot 8 \\cdot 128 \\cdot 2 = 131{,}072\\) bytes, or 128 kibibytes (KiB) per token. A 20 gibibyte (GiB) cache is 20 · 1024 · 1024 = 20,971,520 KiB, so \\(N = 20{,}971{,}520 / 128 = 163{,}840\\) tokens. In the release notes, MiniMax-M3, a large language model, on an H200 GPU, NVIDIA's data-center chip, grows from 433k to 672k cache tokens. That is about 55 percent more room.",
+      "The second change is block size, whose default moves from 16 tokens to 64. With the numbers above, a block of 64 tokens is 8 mebibytes, so the 20 GiB cache holds 2,560 blocks. Larger blocks mean less bookkeeping. They also waste more space in a conversation's last, partly filled block.",
+      "The catch involves prefix caching, where a new request skips recomputing a prompt start that an earlier request already processed. Only complete blocks can be reused. Suppose requests share a 40-token system prompt, the fixed instructions placed before every conversation. At size 16, two full blocks hold 32 of those tokens, so 32 can be reused. At size 64, no block is complete, so nothing is reused.",
+      "Compare this with the old approach. The old way traded memory for safety by guessing early. The new way measures late and spends the margin. The block-size change is a separate trade: bookkeeping efficiency against reuse granularity.",
+      "The limitations are real. One write-up notes that the pull request itself says a benchmark of block size 16 against 64 was still missing. The release notes also warn that per-token decode latency, the time to produce each new token, can rise on some models. Agent workloads, which often depend on short shared prefixes, should test the old block size before upgrading. Passing --block-size 16 keeps the old behavior. It is also unclear how much of the 55 percent gain carries over to other models and GPUs, since the notes give one example."
+     ]
+    }
+   ]
+  },
+  "robotics": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "A Robot Policy Learns to Imagine the Future Using the Same Tokens It Uses to See",
+     "dek": "Z-sight, a new robot model from a 15-author team, predicts what the scene will look like next inside the vision encoder's own feature space. It skips video generation and runs at about 110 milliseconds per action chunk.",
+     "body": [
+      "On November 18, 2026, a 15-author team posted Z-sight (arXiv 2611.24940), a robot foundation model that combines action prediction with a world model. A world model predicts what the scene will look like after the robot acts. The authors report 81.9% success on SIMPLE, a humanoid loco-manipulation benchmark, which is 9.6 points above the strongest baseline. They also report 73.3% across six real tasks on the Unitree G1 humanoid, which is 20.0 points above the strongest baseline.",
+      "Recall that a vision-language-action (VLA) model starts from a vision-language model (VLM), a network that reads images and text together. It is then fine-tuned to output robot motor commands. Recent work adds foresight, meaning the model also predicts future frames. Think of a chess player who visualizes the board two moves ahead before moving a piece. Predicting full video is expensive, because the video generator is a large network and it adds latency.",
+      "Z-sight keeps the foresight but drops the pixels. The VLM already turns each image into spatial feature tokens. Z-sight predicts the future versions of those same tokens, with no pixel decoder and no separate image encoder. Mechanically, it is a mixture-of-transformers (MoT), a design where separate transformer stacks (here three) share attention over one sequence. A foresight expert predicts future tokens by flow matching. An action expert then attends to those predicted tokens as it produces the action chunk. Recall that flow matching trains a network to output a velocity that carries random noise toward the data.",
+      "\\[ \\mathcal{L}_{\\text{FM}} = \\mathbb{E}\\,\\big\\| v_\\theta(x_t, t, c) - (x_1 - \\epsilon) \\big\\|^2, \\quad x_t = (1-t)\\,\\epsilon + t\\,x_1 \\]\\nThis is the standard flow-matching loss. It teaches the network to point from noise toward the target. Here \\(x_1\\) is the clean target, either future tokens or actions. \\(\\epsilon\\) is Gaussian noise of the same shape. \\(t\\in[0,1]\\) is the noise level. \\(c\\) is the context from the VLM. \\(v_\\theta\\) is the network with weights \\(\\theta\\). For example, with \\(\\epsilon=0.2\\), \\(x_1=1.0\\) and \\(t=0.5\\), we get \\(x_t=0.6\\) and a target velocity of 0.8. An ablation in the paper sets a view-loss weight \\(\\lambda_v\\) to zero. With that weight at zero, the foresight branch is trained only by action gradients.",
+      "The paper reports a 30-step action chunk in 109.5 ms. That is faster than π0.5 at 120.5 ms and Fast-WAM at 155.9 ms, even though Z-sight predicts the future online. Turning off the foresight stream saves about 45 ms. Predicted tokens reach 0.955 cosine similarity with the true future tokens. Cosine similarity measures how closely two vectors point the same way. Simply copying the present tokens scores 0.921. Removing the foresight branch trails the full model, for example 68.3% against the full model. Caveats: this is a preprint, the results are the authors' own, and performance on tabletop benchmarks is only competitive, not leading."
+     ],
+     "why": "It suggests that robots can plan with a cheap latent forecast, so they may not need a full video generator.",
+     "terms": [
+      {
+       "term": "Vision-language-action (VLA) model",
+       "def": "A network that takes camera images and a language instruction and outputs robot actions."
+      },
+      {
+       "term": "Vision-language model (VLM)",
+       "def": "A network that reads images and text together, usually pretrained on web data."
+      },
+      {
+       "term": "Mixture-of-transformers (MoT)",
+       "def": "A design in which separate transformer stacks, each with its own weights, share attention over one token sequence."
+      },
+      {
+       "term": "Flow matching",
+       "def": "A generative training method in which a network learns a velocity field that moves noise toward real data."
+      },
+      {
+       "term": "Cosine similarity",
+       "def": "A score from -1 to 1 for how closely two vectors point in the same direction, regardless of their length."
+      }
+     ],
+     "sources": [
+      {
+       "title": "Z-sight: Unifying Vision-Language-Action and Latent World Modeling (arXiv abstract)",
+       "url": "https://arxiv.org/abs/2611.24940"
+      },
+      {
+       "title": "Z-sight full text (arXiv HTML)",
+       "url": "https://arxiv.org/html/2611.24940"
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "Z-sight predicts future scenes in the vision-language model's own feature space instead of generating video pixels.",
+      "A foresight expert and an action expert share attention, and both are trained with flow matching, so the action expert can read the predicted future.",
+      "It reports 81.9% on SIMPLE and 73.3% on six Unitree G1 tasks at about 110 ms per chunk, but these are self-reported preprint results."
+     ],
+     "deeper": [
+      "Start with the prerequisites. A token is a vector that stands for one piece of input, such as a patch of an image. A vision-language model (VLM) is a network that reads images and text together and turns each image into spatial feature tokens. A vision-language-action (VLA) model starts from a VLM and is fine-tuned to output robot motor commands. An action chunk is a short sequence of future commands emitted at once, here 30 steps. Recent VLAs add foresight, meaning they also predict future frames. Think of a chess player who pictures the board two moves ahead before touching a piece.",
+      "Predicting full video is costly, because the video generator is a large network and adds latency, the delay between seeing and acting. Z-sight keeps the foresight but drops the pixels. The VLM already encodes each image as feature tokens. Z-sight predicts the future versions of those same tokens, so it needs no pixel decoder and no separate image encoder. The chess player is now imagining the position, not painting a picture of it.",
+      "Mechanically, the model is a mixture-of-transformers (MoT), a design where separate transformer stacks share attention over one sequence. Here there are three stacks. The first is the VLM. The second is a foresight expert, which predicts future tokens by flow matching. The third is an action expert, which attends to those predicted tokens while producing the action chunk. Attention is the operation that lets each token read from the others.",
+      "Recall that flow matching trains a network to output a velocity that carries random noise toward the data. The loss is:",
+      "\\[ \\mathcal{L}_{\\text{FM}} = \\mathbb{E}\\,\\big\\| v_\\theta(x_t, t, c) - (x_1 - \\epsilon) \\big\\|^2, \\quad x_t = (1-t)\\,\\epsilon + t\\,x_1 \\]",
+      "This is the standard flow-matching loss, where the subscript FM stands for flow matching. It teaches the network to point from noise toward the target. Here \\(x_1\\) is the clean target, either future tokens or actions. \\(\\epsilon\\) is Gaussian noise, random values from a bell-shaped distribution, with the same shape as \\(x_1\\). \\(t\\in[0,1]\\) is a scalar noise level. \\(x_t\\) is the blend of noise and target at level \\(t\\). \\(c\\) is the context from the VLM. \\(v_\\theta\\) is the network with weights \\(\\theta\\), and it outputs a velocity with the same shape as \\(x_1\\). \\(\\mathbb{E}\\) is the average over data, noise, and \\(t\\). The double bars with a square give the sum of squared entries of the difference.",
+      "A scalar example makes this concrete. Take \\(\\epsilon=0.2\\), \\(x_1=1.0\\) and \\(t=0.5\\). Then \\(x_t = 0.5\\times0.2 + 0.5\\times1.0 = 0.6\\). The target velocity is \\(x_1-\\epsilon = 0.8\\). Moving from 0.2 to 1.0 in one unit of time requires exactly that speed.",
+      "The paper also measures how close predicted tokens are to the truth using cosine similarity:",
+      "\\[ \\cos(a,b) = \\frac{a\\cdot b}{\\|a\\|\\,\\|b\\|} \\]",
+      "This measures whether two vectors point the same way, ignoring their lengths. \\(a\\) and \\(b\\) are the predicted and true token vectors. \\(a\\cdot b\\) is their dot product, and \\(\\|a\\|\\) and \\(\\|b\\|\\) are their lengths. Predicted tokens reach 0.955. Simply copying the present tokens scores 0.921, so the model adds real information beyond \"nothing changes.\"",
+      "Compared with earlier work, the main difference is where the foresight lives. Video-predicting policies pay for a pixel generator. Z-sight reports a 30-step chunk in 109.5 milliseconds (ms). That beats π0.5 at 120.5 ms and Fast-WAM at 155.9 ms, two baseline robot policies, even though Z-sight predicts the future online. Turning off the foresight stream saves about 45 ms, so foresight is not free, but it is cheap. The authors report 81.9% success on SIMPLE, a humanoid loco-manipulation benchmark, meaning walking while handling objects. That is 9.6 points above the strongest baseline. On six real tasks on the Unitree G1 humanoid they report 73.3%, which is 20.0 points above the strongest baseline. Removing the foresight branch trails the full model, for example 68.3% against the full model's score.",
+      "One ablation is worth understanding. A view-loss weight \\(\\lambda_v\\) scales the loss on predicted future tokens. Setting it to zero means the foresight branch is trained only by gradients, the learning signals, that flow back from the actions. That tests whether explicit future supervision matters.",
+      "Several caveats apply. This is a preprint, and the results are the authors' own. On tabletop benchmarks the model is only competitive, not leading. Open questions remain. Do feature tokens keep fine detail that matters for contact? Does the gain come from foresight itself or from extra supervision? And how well does the approach hold up on longer tasks?"
+     ]
+    }
+   ]
+  },
+  "discoveries": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "A Weather-Style Neural Network That Cannot Blow Up: Learning an Energy Bowl Keeps Chaotic Forecasts Bounded",
+     "dek": "Researchers at the Massachusetts Institute of Technology built a neural network layer that provably keeps long forecasts of chaotic systems inside a finite region, and the work now has a journal paper and a university news release.",
+     "body": [
+      "Sunbochen Tang, Themistoklis Sapsis and Navid Azizan of the Massachusetts Institute of Technology posted the work to arXiv, a public server for preprints (papers not yet peer reviewed), in October 2024, under an earlier title. The Proceedings of the National Academy of Sciences (PNAS), a peer-reviewed journal, published it online on October 12, 2026. MIT News covered it on November 20, 2026. Think of a marble rolling in a bowl. If you know the bowl's shape, you can guarantee the marble never escapes, as long as the forces always push it back toward the middle when it is far out. The authors' framework simultaneously learns a dynamics emulator and an energy-like function, and uses the latter to build an algebraic dissipative constraint. The core piece is a dissipative projection layer, built on control-theoretic principles, that makes the learned system dissipative. The bowl is learned from data, not given in advance.",
+      "Schematically, the layer corrects the network's raw output so it never points 'uphill' too steeply: \\\\[ f^*(x) = \\\\hat f(x) - \\\\mathrm{ReLU}\\\\!\\\\left(\\\\frac{\\\\nabla V(x)^\\\\top \\\\hat f(x) - b(x)}{\\\\|\\\\nabla V(x)\\\\|^2}\\\\right)\\\\nabla V(x). \\\\] Intuitively, this is the closed-form projection onto the set of allowed velocities. It leaves the network's guess alone when that guess is already safe and subtracts just enough when it is not. Here \\\\(x\\\\) is the current state, a vector in \\\\(\\\\mathbb{R}^n\\\\). The vector \\\\(\\\\hat f(x)\\\\) is the raw network velocity, also in \\\\(\\\\mathbb{R}^n\\\\), and \\\\(f^*(x)\\\\) is the corrected velocity that the layer outputs. The scalar \\\\(V(x)\\\\) is the learned energy-like quantity, and its gradient \\\\(\\\\nabla V(x)\\\\) is the uphill direction, also in \\\\(\\\\mathbb{R}^n\\\\). The superscript \\\\(\\\\top\\\\) turns a vector into a row, so \\\\(\\\\nabla V^\\\\top \\\\hat f\\\\) is the dot product, meaning the rate at which energy rises along the raw velocity. The scalar \\\\(b(x)\\\\) is the allowed rate of energy change. Finally, \\\\(\\\\|\\\\nabla V\\\\|^2\\\\) is the squared length of the gradient, and the rectified linear unit \\\\(\\\\mathrm{ReLU}(z)\\\\) is the function max(0, z). I wrote the bound \\\\(b(x)\\\\) generically, so the paper's exact condition may differ. A tiny example: take \\\\(\\\\nabla V = (2,0)\\\\), \\\\(\\\\hat f = (3,1)\\\\) and \\\\(b = 2\\\\). The uphill rate is 6, which is 4 too much. Dividing that excess of 4 by \\\\(\\\\|\\\\nabla V\\\\|^2 = 4\\\\) gives 1, so the layer subtracts \\\\(1\\\\times(2,0)\\\\) and returns \\\\(f^* = (1,1)\\\\), whose uphill rate is exactly 2. According to MIT's release, outside a learned boundary the energy-like quantity must decrease, so the simulated system is drawn back toward the bounded region. That is why the trajectory cannot run away.",
+      "In tests, the paper illustrates the method on Lorenz 63, then evaluates it on Lorenz 96 (a five-variable version) and on a reduced-order model of the Kuramoto–Sivashinsky equation. Lorenz 96 is a standard toy model of atmospheric dynamics, and Kuramoto–Sivashinsky is a chaotic equation for flame fronts and thin fluid films. For the reduced-order Kuramoto–Sivashinsky model, reconstructed from 32 Fourier modes, the unconstrained network suffered finite-time blowup, meaning its values grew without limit. A Fourier mode is one smooth wave pattern, and the model tracks 32 of them. The learned invariant level set, the set of states sharing one energy value that the dynamics cannot leave, also gives an outer estimate of the strange attractor. The guarantee covers boundedness only, not forecast accuracy, and a bound can be loose. The benchmarks are low-dimensional. MIT's release presents the idea as relevant to weather, climate and turbulence, and quotes the team as still testing how well it works on data-driven models of realistic weather systems. I found no demonstration on a full global weather model. A follow-up preprint by Andrea Goertzen, Sunbochen Tang and Navid Azizan, called the Energy-Constrained Operator, extends the idea to operator learning, meaning learning a map from one state of a system to the next, with a closed-form quadratic projection layer."
+     ],
+     "why": "Trustworthy long-horizon climate statistics need emulators that cannot produce impossible values, and this gives a proof-backed building block rather than an empirical patch.",
+     "terms": [
+      {
+       "term": "Dissipative system",
+       "def": "A system that loses energy over time, so its states shrink toward a bounded region instead of flying apart."
+      },
+      {
+       "term": "Strange attractor",
+       "def": "The fractal-shaped set of states a chaotic, dissipative system keeps wandering over without ever repeating."
+      },
+      {
+       "term": "Invariant statistics",
+       "def": "Long-run averages, such as mean temperature or storm frequency, that stay the same however long you watch the system."
+      },
+      {
+       "term": "Ordinary differential equation (ODE)",
+       "def": "A rule giving the rate of change of a system's state as a function of its current state."
+      },
+      {
+       "term": "Rectified linear unit (ReLU)",
+       "def": "The function max(0, z), which passes positive values and zeroes out negative ones."
+      },
+      {
+       "term": "Emulator",
+       "def": "A fast learned model that imitates a slower physical simulation."
+      },
+      {
+       "term": "Level set",
+       "def": "The set of all states that share the same value of a function, such as the same energy."
+      }
+     ],
+     "sources": [
+      {
+       "title": "Learning dissipative chaotic dynamics with boundedness guarantees (journal page)",
+       "url": "https://www.pnas.org/doi/10.1073/pnas.2533077123"
+      },
+      {
+       "title": "arXiv 2410.00976: Learning Dissipative Chaotic Dynamics with Boundedness Guarantees",
+       "url": "https://arxiv.org/abs/2410.00976"
+      },
+      {
+       "title": "MIT News: New approach enables physically consistent AI models of chaotic systems",
+       "url": "https://news.mit.edu/new-approach-enables-physically-consistent-ai-models-chaotic-systems-1120"
+      },
+      {
+       "title": "ECO: Energy-Constrained Operator Learning for Chaotic Dynamics with Boundedness Guarantees",
+       "url": "https://arxiv.org/pdf/2512.01984"
+      },
+      {
+       "title": "Doan, Polifke and Magri (2021): physics-constrained reservoir computing (PubMed)",
+       "url": "https://pubmed.ncbi.nlm.nih.gov/35153579/"
+      },
+      {
+       "title": "Promoting global stability in data-driven models of quadratic nonlinear dynamics",
+       "url": "https://arxiv.org/pdf/2105.01843"
+      }
+     ],
+     "background": [
+      "Picture a marble in a bowl. A chaotic system is one where tiny differences in the starting state grow exponentially, so detailed forecasts fail after a short horizon. The classic example is the three-variable model Edward Lorenz published in 1963: \\\\[ \\\\dot x = \\\\sigma (y-x),\\\\quad \\\\dot y = x(\\\\rho - z) - y,\\\\quad \\\\dot z = xy - \\\\beta z. \\\\] Intuitively, each line says how fast one variable is changing, given where the system is right now. Here x, y and z are the three numbers that make up the state. A dot over a letter means its rate of change per unit of time. The symbols sigma, rho and beta are fixed positive constants, with standard values 10, 28 and 8/3. These equations are ordinary differential equations (ODEs), which are rules that give the rate of change of each variable from the current state. Many chaotic systems are also dissipative, meaning energy drains away and volumes of possible states shrink. For Lorenz 63 the volume shrinks at rate \\\\(\\\\sigma + 1 + \\\\beta\\\\), which is about 13.7 for the standard values. So trajectories stay in a bounded region and settle onto a strange attractor, a fractal set the motion wanders over forever. The formal property is boundedness: for a state \\\\(x(t)\\\\) obeying \\\\(\\\\dot x = f(x)\\\\), we need \\\\(\\\\sup_{t\\\\ge 0}\\\\|x(t)\\\\| < \\\\infty\\\\) for every starting point. In words, the state never travels arbitrarily far from the origin. Here \\\\(x(t)\\\\) is the state at time t, a list of n numbers, and \\\\(\\\\mathbb{R}^n\\\\) is the space of all such lists. The function \\\\(f\\\\) gives the velocity of the state, and \\\\(\\\\|\\\\cdot\\\\|\\\\) is the ordinary length of a vector. The symbol \\\\(\\\\sup\\\\) means the largest value reached over all times from 0 onward, and the condition says that largest value is a finite number.",
+      "This matters because weather and climate emulators, which are fast learned stand-ins for slow physics simulators, are judged on long-run statistics, such as average temperature and storm frequency. Getting those statistics means rolling a model forward for many thousands of steps. One runaway trajectory, where values grow without limit, makes those averages meaningless. Earlier work attacked this in several ways. Doan, Polifke and Magri (2021) combined reservoir computing, a method that learns dynamics from data using a fixed random network with only its output layer trained, with physical equations, to predict extreme events and long-term velocity statistics in a model of chaotic flow. Another line, called trapping sparse regression, promoted global stability in models built from quadratic terms by searching for a region the motion cannot leave. The authors of the work below note that approaches of this kind often need system-specific prior knowledge and lack formal guarantees of trajectory boundedness."
+     ],
+     "status": "The paper is peer reviewed (PNAS received it December 4, 2025, accepted it July 14, 2026 and published it October 12, 2026) and the authors released open-source code, but I found no independent reproduction, the boundedness guarantee is a proof in the paper that I did not check line by line, and the tests so far are small benchmarks.",
+     "recap": [
+      "A chaotic emulator can look accurate for a few steps and then blow up, which ruins long-run climate statistics.",
+      "The layer learns an energy bowl alongside the dynamics and projects the network's output so trajectories stay provably bounded.",
+      "Boundedness is proven, but accuracy is not guaranteed, and the tests so far are small benchmarks rather than full weather models."
+     ],
+     "deeper": [
+      "Start with the prerequisites. A chaotic system is one where tiny differences in the starting state grow exponentially, so detailed forecasts fail after a short time. Many such systems are also dissipative: energy drains away, and the set of possible states shrinks. Lorenz's 1963 weather-like model is the classic case. Its volume of states shrinks at rate \\(\\sigma + 1 + \\beta\\), about 13.7 for the standard constants (\\(\\sigma=10\\), \\(\\beta=8/3\\)). Trajectories therefore stay in a bounded region and wander over a fractal set called a strange attractor. An emulator is a fast learned stand-in for a slow physics simulator. It is judged on long-run averages, so it must run for thousands of steps without any trajectory flying off to infinity.",
+      "Now the mechanism, starting with a picture. Imagine a marble in a bowl. If the walls always push the marble back toward the middle when it is far out, it can never escape, even if its path inside is erratic. The work from Sunbochen Tang, Themistoklis Sapsis and Navid Azizan at the Massachusetts Institute of Technology (MIT), published in the Proceedings of the National Academy of Sciences, learns the bowl and the dynamics together. The bowl is a scalar function \\(V\\), an energy-like height assigned to every state. A neural network proposes a velocity for each state. A final layer then checks whether that velocity climbs the bowl too steeply. If it does, the layer subtracts just enough to fix it.",
+      "The math has two parts. Boundedness means \\(\\sup_{t\\ge 0}\\|x(t)\\|<\\infty\\). Here \\(x(t)\\) is the state at time \\(t\\), a list of \\(n\\) numbers. The symbol \\(\\sup\\) means the largest value over all times from 0 onward. The double bars give vector length. In words, the state never travels arbitrarily far from the origin. The corrective layer is the formula",
+      "\\[ f^*(x) = \\hat f(x) - \\mathrm{ReLU}\\!\\left(\\frac{\\nabla V(x)^\\top \\hat f(x) - b(x)}{\\|\\nabla V(x)\\|^2}\\right)\\nabla V(x). \\]",
+      "This is a closed-form projection. It keeps the raw velocity if it is already allowed and otherwise slides it back to the boundary of the allowed set. Here \\(x\\in\\mathbb{R}^n\\) is the state. \\(\\hat f(x)\\in\\mathbb{R}^n\\) is the raw network velocity. \\(f^*(x)\\in\\mathbb{R}^n\\) is the corrected velocity. \\(V(x)\\) is the learned scalar energy. The gradient \\(\\nabla V(x)\\in\\mathbb{R}^n\\) is the vector of slopes of \\(V\\), which points uphill. The product \\(\\nabla V^\\top \\hat f\\) is a dot product, the rate at which energy rises along the raw velocity. The scalar \\(b(x)\\) is the allowed rate of energy change. The rectified linear unit (ReLU), \\(\\mathrm{ReLU}(z)=\\max(0,z)\\), turns negative values into zero, so safe velocities are untouched. I wrote \\(b(x)\\) generically, and the paper's exact condition may differ.",
+      "Why does this give boundedness? By the chain rule, the energy along a trajectory changes as",
+      "\\[ \\frac{d}{dt}V(x(t)) = \\nabla V(x)^\\top f^*(x). \\]",
+      "This says the energy's rate of change is the uphill direction dotted with the actual velocity. The layer forces this quantity to be at most \\(b(x)\\). Per MIT's release, outside a learned boundary the energy must decrease. The state is then pulled back toward the bounded region, like the marble sliding down the wall.",
+      "A small example makes this concrete. Take \\(\\nabla V=(2,0)\\), \\(\\hat f=(3,1)\\) and \\(b=2\\). The uphill rate is \\(2\\cdot3+0\\cdot1=6\\), which exceeds the allowed 2 by 4. Divide 4 by \\(\\|\\nabla V\\|^2=4\\) to get 1. The layer subtracts \\(1\\times(2,0)\\) and returns \\(f^*=(1,1)\\). Its uphill rate is \\(2\\cdot1+0\\cdot1=2\\), exactly the limit. Had \\(\\hat f\\) been \\((1,1)\\), the excess would be zero and nothing would change.",
+      "Compared with earlier work, this approach is different. Doan, Polifke and Magri (2021) combined reservoir computing, which trains only the output layer of a fixed random network, with physical equations. Trapping sparse regression finds a region the motion cannot leave, for models built from quadratic terms. The authors note that approaches of this kind often need system-specific prior knowledge and lack formal guarantees of boundedness. Here the bowl is learned from data, and the guarantee is built into the architecture. In the paper's tests, an unconstrained network blew up in finite time on a reduced Kuramoto–Sivashinsky model with 32 Fourier modes, where each mode is one smooth wave pattern. The learned invariant level set, the set of states sharing one energy value that the dynamics cannot leave, also gives an outer estimate of the strange attractor.",
+      "The limits matter. The guarantee covers boundedness only, not forecast accuracy, and a bound can be loose. The benchmarks are low-dimensional: Lorenz 63, a five-variable Lorenz 96 and the reduced Kuramoto–Sivashinsky model. I found no demonstration on a full global weather model, and the team says it is still testing realistic weather systems. A follow-up preprint, the Energy-Constrained Operator by Goertzen, Tang and Azizan, extends the idea to operator learning, with a closed-form quadratic projection layer."
+     ],
+     "checked": true
+    }
+   ]
+  },
+  "primer": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "Teaching attention where words sit: from sine waves to rotating vectors",
+     "dek": "Attention cannot tell word order on its own, so models add position information, and the modern fix is to rotate query and key vectors by an angle that grows with position.",
+     "body": [
+      "Start with the problem. Self-attention is the step where every token (a word or word fragment) looks at every other token and mixes in the ones it finds relevant. Its scores depend only on what the tokens are, not where they sit. Shuffle the input and each token still gets the same score against every other token. To this machinery, 'dog bites man' and 'man bites dog' contain the same bag of tokens. Language needs order, so we must inject it.",
+      "Here is the intuition. Picture guests at a dinner party wearing name tags but no seat numbers. You cannot tell who sits next to whom. Rotary position embedding (RoPE), a method that encodes position by rotating vectors, is like giving each guest a clock hand. The hand at seat 5 is turned a fixed amount further than the hand at seat 4. Two guests can compare hands and read off how far apart they sit, without knowing absolute seat numbers. The analogy breaks in two places. A real model uses many clock hands at different speeds, because one hand repeats every full turn and would confuse far-apart seats. Also, the hands are only one part of what the guests compare. The content of the tokens matters just as much.",
+      "Now the vocabulary. An embedding is the vector of numbers that represents a token. In attention, each token produces a query (what it is looking for) and a key (what it offers), both vectors of the same length. The score is the dot product of one token's query with another token's key, which is large when the vectors point the same way. A softmax turns the scores into weights that are positive and sum to one. Those weights then average the value vectors, which carry the content to be passed along. A position index is the integer 0, 1, 2, and so on giving a token's place. Absolute encodings describe 'I am at seat 5'. Relative encodings describe 'you are two seats from me'. A rotation matrix turns a two-dimensional vector by an angle without changing its length.",
+      "Now a tiny example. Use two-dimensional vectors and a rotation of 90 degrees per position step, which keeps the arithmetic easy. Rotating by 90 degrees maps (x, y) to (-y, x). Rotating by 180 degrees maps (x, y) to (-x, -y). Let every token have the same raw query and key, (1, 2), so only position differs. At position 0 the vector stays (1, 2). At position 1 it becomes (-2, 1). At position 2 it becomes (-1, -2). Take the query at position 2, which is (-1, -2). Against the key at position 0, (1, 2), the dot product is -1 - 4 = -5. Against the key at position 1, (-2, 1), it is 2 - 2 = 0. Against the key at position 2, (-1, -2), it is 1 + 4 = 5. Without rotation all three scores would be 5. Now the scores are 5, 0, -5 for offsets 0, 1, 2. The query at position 1 against keys at positions 1 and 0 gives 5 and 0, the same values for the same offsets.",
+      "Now the general math. The original Transformer used fixed sinusoids added to the token embedding:",
+      "\\[ \\mathrm{PE}(p,2i)=\\sin\\!\\left(\\frac{p}{10000^{2i/d}}\\right),\\qquad \\mathrm{PE}(p,2i+1)=\\cos\\!\\left(\\frac{p}{10000^{2i/d}}\\right) \\]",
+      "This gives each position a unique pattern of slow and fast waves, which is added to the embedding. Here PE is the positional encoding, p is the position index, d is the embedding width, i counts wave pairs from 0 to d/2 - 1, and 2i and 2i+1 are the two coordinates of pair i. The result is a vector of length d. RoPE keeps the same frequencies but uses them as rotation angles:",
+      "\\[ \\theta_i=10000^{-2i/d},\\qquad R(\\phi)=\\begin{pmatrix}\\cos\\phi & -\\sin\\phi\\\\ \\sin\\phi & \\cos\\phi\\end{pmatrix} \\]",
+      "Each pair of coordinates gets its own turning speed, fast for small i and slow for large i. Here \\(\\theta_i\\) is the angle in radians per position step for pair i, and \\(R(\\phi)\\) is the 2 by 2 matrix that rotates a 2D vector by angle \\(\\phi\\) (in radians). Let \\(R_m\\) be the d by d block-diagonal matrix, meaning a matrix with small blocks along its diagonal and zeros elsewhere, with blocks \\(R(m\\theta_0),\\dots,R(m\\theta_{d/2-1})\\), where m is a position index. Then the score between a query at position m and a key at position n is:",
+      "\\[ (R_m\\mathbf{q})^{\\top}(R_n\\mathbf{k})=\\mathbf{q}^{\\top}R_m^{\\top}R_n\\,\\mathbf{k}=\\mathbf{q}^{\\top}R_{n-m}\\,\\mathbf{k} \\]",
+      "Rotating both vectors leaves a score that depends only on the offset n - m, because undoing one rotation and applying the other leaves a single rotation by the difference. Here \\(\\mathbf{q}\\) and \\(\\mathbf{k}\\) are the unrotated query and key, each a vector of length d. The superscript \\(\\top\\) means transpose, which turns a column vector into a row so the product gives one number. \\(R_m\\) and \\(R_n\\) are the d by d rotations for positions m and n, and \\(R_{n-m}\\) is the rotation for the offset. Our example is the case d = 2 with one pair and a made-up \\(\\theta_0\\) of 90 degrees. There the score is \\(5\\cos(90^\\circ\\cdot\\text{offset})\\), which gives 5, 0, -5.",
+      "Common confusions follow. RoPE is not added to the embedding. It is applied to queries and keys inside every attention layer, and values are left alone. It encodes relative offset, not absolute position, though a model can sometimes infer absolute position indirectly. It does not extrapolate for free. Beyond the trained length, the model meets angles it has never seen, and quality drops. The number 10000 is a tunable base, not a law. Implementations differ in which coordinates they pair up, so weights from one library may not load into another without reordering. Finally, relative position does not mean attention is purely local. The content of q and k still matters a great deal, and a token can attend strongly to a distant one.",
+      "Today many major open-weight model families (models whose trained weights are publicly released) use RoPE, including Llama (Meta's open language models), Qwen (Alibaba's open language models), Mistral (a family of open models from Mistral AI), and Gemma (Google's open language models). Recall that the key-value cache holds earlier tokens' keys and values so they are not recomputed. Because keys are rotated once and then stored, the cache needs no re-rotation. Long context is handled by changing the angles. Raising the base, as Llama 3 did, slows the rotations. Position interpolation squeezes new positions into the trained range. YaRN (Yet another RoPE extensioN), a method for stretching RoPE to longer contexts, scales different frequencies differently. DeepSeek's models (an open model family that compresses keys to save memory) keep a separate small rotated part of each key, since rotation does not commute with that compression. Some designs drop or mix encodings, such as ALiBi (Attention with Linear Biases, a linear penalty on distance) or Llama 4's interleaving of layers without any positional encoding."
+     ],
+     "why": "Position handling decides how well a model uses long documents and how cheaply it can be extended, so it shapes context length, memory use, and quality in nearly every current language model.",
+     "terms": [
+      {
+       "term": "Positional encoding",
+       "def": "Extra information that tells a model where each token sits in the sequence, since attention alone ignores order."
+      },
+      {
+       "term": "Rotary position embedding (RoPE)",
+       "def": "A method that rotates query and key vectors by position-dependent angles so their dot product depends on relative offset."
+      },
+      {
+       "term": "Rotation matrix",
+       "def": "A square matrix that turns a vector by a fixed angle without changing its length."
+      },
+      {
+       "term": "Relative position",
+       "def": "The distance between two tokens, as opposed to each token's absolute place in the sequence."
+      },
+      {
+       "term": "Key-value cache",
+       "def": "Stored keys and values of earlier tokens so they are not recomputed when generating each new token."
+      }
+     ],
+     "sources": [
+      {
+       "title": "Attention Is All You Need (Vaswani et al., 2017)",
+       "url": "https://arxiv.org/abs/1706.03762"
+      },
+      {
+       "title": "RoFormer: Enhanced Transformer with Rotary Position Embedding (Su et al., 2021)",
+       "url": "https://arxiv.org/abs/2104.09864"
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "Attention scores ignore word order unless we inject position information.",
+      "Rotary position embedding rotates each query and key by an angle proportional to its position, so their dot product depends only on how far apart the tokens are.",
+      "Long-context models mostly work by adjusting the rotation angles, for example by raising the base or interpolating positions."
+     ],
+     "deeper": [
+      "Start with the problem. Self-attention is the step where every token (a word or word fragment) looks at every other token and mixes in the ones it finds relevant. Each token produces a query (what it is looking for), a key (what it offers), and a value (the content it passes along), all vectors. The score between two tokens is the dot product of one query with one key, which is large when the vectors point the same way. A softmax turns the scores into positive weights that sum to one, and those weights average the value vectors. None of this uses position, so \"dog bites man\" and \"man bites dog\" look identical. Order must be injected.",
+      "Picture dinner guests with name tags but no seat numbers. Rotary position embedding (RoPE), a method that encodes position by rotating vectors, gives each guest a clock hand. The hand at seat 5 is turned a fixed amount further than the hand at seat 4. Two guests compare hands and read off how far apart they sit, without knowing absolute seat numbers. A real model uses many hands at different speeds, because one hand repeats every full turn and would confuse far-apart seats. The hands are also only part of the comparison, since token content matters just as much.",
+      "The original Transformer, the standard attention-based architecture, added fixed sine and cosine waves to each token's embedding, the vector of numbers representing the token:",
+      "\\[ \\mathrm{PE}(p,2i)=\\sin\\!\\left(\\frac{p}{10000^{2i/d}}\\right),\\qquad \\mathrm{PE}(p,2i+1)=\\cos\\!\\left(\\frac{p}{10000^{2i/d}}\\right) \\]",
+      "This gives each position a unique pattern of slow and fast waves. Here PE is the positional encoding, a vector of length d. The symbol p is the position index (the integer 0, 1, 2, and so on), d is the embedding width, and i counts wave pairs from 0 to d/2 − 1. The coordinates 2i and 2i+1 are the two entries of pair i.",
+      "RoPE keeps the frequencies but uses them as rotation angles. A rotation matrix turns a 2D vector by an angle without changing its length:",
+      "\\[ \\theta_i=10000^{-2i/d},\\qquad R(\\phi)=\\begin{pmatrix}\\cos\\phi & -\\sin\\phi\\\\ \\sin\\phi & \\cos\\phi\\end{pmatrix} \\]",
+      "Each coordinate pair gets its own turning speed, fast for small i and slow for large i. Here \\(\\theta_i\\) is the angle in radians per position step for pair i, and \\(R(\\phi)\\) is the 2 by 2 matrix that rotates by \\(\\phi\\) radians. Let \\(R_m\\) be the d by d block-diagonal matrix (small blocks along the diagonal, zeros elsewhere) with blocks \\(R(m\\theta_0),\\dots,R(m\\theta_{d/2-1})\\), where m is a position index. The score between a query at position m and a key at position n is:",
+      "\\[ (R_m\\mathbf{q})^{\\top}(R_n\\mathbf{k})=\\mathbf{q}^{\\top}R_m^{\\top}R_n\\,\\mathbf{k}=\\mathbf{q}^{\\top}R_{n-m}\\,\\mathbf{k} \\]",
+      "Rotating both vectors leaves a score that depends only on the offset n − m, because undoing one rotation and applying the other leaves a single rotation by the difference. Here \\(\\mathbf{q}\\) and \\(\\mathbf{k}\\) are the unrotated query and key, each of length d. The superscript \\(\\top\\) is the transpose, which turns a column into a row so the product is one number. \\(R_n\\) is the d by d rotation for position n, and \\(R_{n-m}\\) is the rotation for the offset.",
+      "Now a small example with d = 2, one pair, and a made-up 90 degrees per step. Rotating by 90 degrees maps (x, y) to (−y, x). Let every raw query and key be (1, 2). At positions 0, 1, 2 the rotated vector is (1, 2), (−2, 1), (−1, −2). Take the query at position 2, (−1, −2). Against the keys at positions 0, 1, 2 the dot products are −1 − 4 = −5, then 2 − 2 = 0, then 1 + 4 = 5. So offsets 0, 1, 2 give 5, 0, −5, matching \\(5\\cos(90^\\circ\\cdot\\text{offset})\\). The query at position 1, (−2, 1), against keys at positions 1 and 0 gives 5 and 0, the same values for the same offsets. Without rotation, all scores would be 5.",
+      "Compared with earlier approaches, sinusoids are added once at the input, so position must survive many layers. RoPE acts on queries and keys inside every layer and leaves values alone. Absolute encodings say \"I am at seat 5\", while relative encodings say \"you are two seats away\". RoPE gets relative behavior from absolute rotations. Because keys are rotated once and then stored, the key-value cache, which holds earlier tokens' keys and values so they are not recomputed, needs no re-rotation. Many open-weight model families (models with publicly released weights) use it, including Llama, Qwen, Mistral, and Gemma, which are open language models from Meta, Alibaba, Mistral AI, and Google.",
+      "The limits matter. RoPE does not extrapolate for free: beyond the trained length the model meets unseen angles and quality drops. The base 10000 is tunable, and raising it, as Llama 3 did, slows the rotations. Position interpolation squeezes new positions into the trained range. YaRN (Yet another RoPE extensioN) scales different frequencies differently. Libraries differ in which coordinates they pair, so weights may need reordering. DeepSeek's models compress keys to save memory, and since rotation does not commute with that compression, they keep a small separate rotated part of each key. Relative position also does not mean local attention, because content can still pull a token toward a distant one. Alternatives include ALiBi (Attention with Linear Biases), a linear penalty on distance, and Llama 4's interleaving of layers that use no positional encoding at all."
+     ]
+    }
+   ]
+  },
+  "throwback": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "The Sliding Stamp: How Reusing One Small Pattern Detector Taught Networks to See",
+     "dek": "Between 1989 and 1998, a handful of researchers showed that a network which reuses the same tiny detector at every image position learns far better than one that treats every pixel separately.",
+     "body": [
+      "Early neural networks (programs that learn by adjusting numbers called weights) treated an image as a flat list of numbers. Take a 28 by 28 picture, which has 784 pixels. A fully connected layer (every input wired to every output) with 100 hidden units (the intermediate outputs of the layer) needs 784 × 100 = 78,400 weights. That layer has no idea that neighboring pixels belong together. It also has no idea that a digit shifted one pixel to the right is still the same digit. With little data, it memorizes the training examples instead of learning general patterns. The 1989 paper by LeCun and colleagues, Backpropagation applied to handwritten zip code recognition (zip codes are postal codes), attacked this problem directly.",
+      "Here is the intuition. Imagine a small rubber stamp that detects one tiny pattern, such as a short vertical edge. You press it at every position of the image and record how strongly it matches each time. You use one stamp for the whole picture, so the network does not need to relearn 'edge' separately for each location. A single detector gives you a map of where that pattern occurs. Several stamps give you several maps.",
+      "Now the vocabulary. A kernel is the small grid of weights, the stamp itself. Weight sharing means the same kernel weights are reused at every position. A feature map is the grid of kernel responses, one per position. A receptive field is the patch of the input that one output value can see. Subsampling (or pooling) shrinks a feature map by summarizing small neighborhoods, for instance by averaging. This makes later layers less sensitive to exact position. A convolutional neural network (CNN), a network built by stacking these kernel and subsampling layers, is the result. Strictly speaking, the sliding operation below is called cross-correlation, but machine learning usually calls it convolution.",
+      "For a two-dimensional input, one output value is computed like this:",
+      "\\[ y_{i,j} = b + \\sum_{u=0}^{k-1}\\sum_{v=0}^{k-1} w_{u,v}\\, x_{i+u,\\,j+v} \\]",
+      "This says: place the kernel with its corner at position (i, j), multiply each kernel weight by the pixel beneath it, add everything up, and add a bias. Here \\(x\\) is the input image, a grid of numbers. \\(w\\) is the \\(k \\times k\\) kernel, where \\(k\\) is the kernel's width and height in pixels, and \\(u, v\\) index positions inside it. \\(b\\) is a single bias number, a constant added to every output. \\(y_{i,j}\\) is the output at row i, column j. With no padding (no extra border added around the input), an input of width n gives an output of width n − k + 1.",
+      "A tiny one-dimensional case makes this concrete. Let the input be [1, 2, 3, 4, 5] and the kernel be [1, 0, −1], with zero bias. The first output is 1×1 + 0×2 + (−1)×3 = −2. The second is 2 − 4 = −2, and the third is 3 − 5 = −2. The result is [−2, −2, −2], a constant response because the input rises at a steady slope. A fully connected layer mapping 5 inputs to 3 outputs would need 15 weights, while this kernel uses only 3. Training still uses ordinary backpropagation (the chain rule applied layer by layer to get gradients, which say how the loss changes when each weight changes). Because one weight is used at many positions, its gradient is the sum of the gradients from all those positions: \\(\\partial L/\\partial w_u = \\sum_i (\\partial L/\\partial y_i)\\, x_{i+u}\\). This says: each position where the weight was used contributes a push, and the total push is the sum of them. Here \\(L\\) is the loss, the single number being minimized. \\(w_u\\) is the kernel weight at index u. \\(y_i\\) is the output at position i. \\(x_{i+u}\\) is the input value that weight \\(w_u\\) multiplied when producing \\(y_i\\). The sum runs over all output positions i.",
+      "The 1998 paper by LeCun, Bottou, Bengio, and Haffner, Gradient-based learning applied to document recognition, presented the mature version, a CNN known as LeNet (a family of small convolutional networks for reading handwritten characters). It argued that whole recognition systems should be trained end to end (all stages adjusted together to reduce one overall loss) with gradient descent (repeatedly nudging the weights in the direction that lowers the loss) rather than assembled from hand-designed parts. Today the same ideas run through modern vision backbones, audio models, and the perception stacks of robots. Weight sharing is now a general design principle. A transformer (a network that uses attention to mix information across a sequence), for example, also applies the same weights at every position in a sequence."
+     ],
+     "why": "Weight sharing and local receptive fields remain the standard way to build in the structure of images, and they showed that matching a network's design to the structure of the data beats brute force.",
+     "terms": [
+      {
+       "term": "Kernel",
+       "def": "A small grid of learnable weights that is slid across the input to detect one local pattern."
+      },
+      {
+       "term": "Weight sharing",
+       "def": "Reusing the same weights at many positions, so the parameter count stays small and a pattern is detected anywhere."
+      },
+      {
+       "term": "Feature map",
+       "def": "The grid of outputs produced by applying one kernel at every position of the input."
+      }
+     ],
+     "sources": [
+      {
+       "title": "LeCun, Y., et al. (1989). Backpropagation applied to handwritten zip code recognition. Neural Computation.",
+       "url": ""
+      },
+      {
+       "title": "LeCun, Y., Bottou, L., Bengio, Y., & Haffner, P. (1998). Gradient-based learning applied to document recognition. Proceedings of the IEEE.",
+       "url": ""
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "A convolution slides one small kernel across the input, reusing the same weights at every position.",
+      "Weight sharing cuts the number of parameters and builds in the assumption that a pattern means the same thing wherever it appears.",
+      "LeNet showed that stacked convolution and subsampling layers can be trained end to end by gradient descent."
+     ],
+     "deeper": [
+      "Start with what a neural network is: a program that learns by adjusting numbers called weights. A pixel is one brightness value in an image. A fully connected layer wires every input to every output, and its hidden units are the intermediate outputs it produces. Feed a 28 by 28 image, which has 784 pixels, into 100 hidden units and you need 784 × 100 = 78,400 weights. This layer sees the image as a flat list. It does not know that neighboring pixels belong together. It does not know that a digit shifted one pixel to the right is still the same digit. With little data, it memorizes the training examples instead of learning general patterns.",
+      "The 1989 paper by LeCun and colleagues, \"Backpropagation applied to handwritten zip code recognition\" (Neural Computation), attacked this directly. Picture a small rubber stamp that detects one tiny pattern, such as a short vertical edge. You press it at every position of the image and record how strongly it matches each time. Because one stamp covers the whole picture, the network learns \"edge\" once, not separately for each location.",
+      "Now the vocabulary. The stamp is a kernel, a small grid of weights. Weight sharing means the same kernel weights are reused at every position. The grid of responses is a feature map, one value per position. Several kernels give several feature maps. A receptive field is the patch of input that one output value can see. Subsampling, also called pooling, shrinks a feature map by summarizing small neighborhoods, for instance by averaging. That makes later layers less sensitive to exact position. Stacking kernel and subsampling layers gives a convolutional neural network (CNN).",
+      "Strictly, the sliding operation is cross-correlation, but machine learning usually calls it convolution. For a two-dimensional input, one output is:",
+      "\\[ y_{i,j} = b + \\sum_{u=0}^{k-1}\\sum_{v=0}^{k-1} w_{u,v}\\, x_{i+u,\\,j+v} \\]",
+      "This places the kernel's corner at position (i, j), multiplies each kernel weight by the pixel beneath it, adds everything up, and adds a bias. Here \\(x\\) is the input image, a grid of numbers. \\(w\\) is the kernel, a \\(k \\times k\\) grid, where \\(k\\) is its width and height in pixels. The indices \\(u, v\\) run over positions inside the kernel. \\(b\\) is the bias, one constant number added to every output. \\(y_{i,j}\\) is the output at row \\(i\\), column \\(j\\). With no padding, meaning no extra border around the input, an input of width \\(n\\) gives an output of width \\(n-k+1\\).",
+      "A one-dimensional case makes this concrete. Let the input be [1, 2, 3, 4, 5], the kernel [1, 0, −1], and the bias zero. The outputs are 1−3 = −2, then 2−4 = −2, then 3−5 = −2, so the result is [−2, −2, −2]. The response is constant because the input rises at a steady slope. The output width is 5 − 3 + 1 = 3. A fully connected layer from 5 inputs to 3 outputs needs 15 weights. This kernel needs 3.",
+      "Training uses ordinary backpropagation, which applies the chain rule layer by layer to get gradients. A gradient says how the loss changes when a weight changes. Because one weight acts at many positions, its gradient is a sum:",
+      "\\[ \\frac{\\partial L}{\\partial w_u} = \\sum_i \\frac{\\partial L}{\\partial y_i}\\, x_{i+u} \\]",
+      "Each position where the weight was used contributes a push, and the total is the sum of the pushes. \\(L\\) is the loss, the single number being minimized. \\(w_u\\) is the kernel weight at index \\(u\\). \\(y_i\\) is the output at position \\(i\\). \\(x_{i+u}\\) is the input value that \\(w_u\\) multiplied to produce \\(y_i\\). The sum runs over all output positions \\(i\\).",
+      "Take the example above and suppose the loss gradients at the three outputs are [1, 0, 2]. Then the gradient for \\(w_0\\) is 1×1 + 0×2 + 2×3 = 7. For \\(w_1\\) it is 1×2 + 0×3 + 2×4 = 10. For \\(w_2\\) it is 1×3 + 0×4 + 2×5 = 13.",
+      "The 1998 paper by LeCun, Bottou, Bengio, and Haffner, \"Gradient-based learning applied to document recognition\" (Proceedings of the IEEE), presented the mature version, LeNet, a family of small CNNs for reading handwritten characters. It argued for training whole systems end to end, adjusting all stages together to reduce one overall loss. The method is gradient descent, which repeatedly nudges the weights in the direction that lowers the loss. The alternative was assembling hand-designed parts.",
+      "Compared with a fully connected layer, a CNN builds in two assumptions: nearby pixels matter together, and the same pattern can appear anywhere. That cuts the weight count sharply and shifts the burden from memorizing to generalizing.",
+      "The assumptions have limits. One small kernel sees only a small receptive field, so seeing large structures requires depth. Sliding a kernel handles shifts gracefully, but it does not by itself handle rotation or changes in size. Pooling gains position tolerance by discarding exact position, which can hurt tasks that need it.",
+      "Weight sharing has outlived the CNN. Modern vision backbones, audio models, and robot perception stacks use it. A transformer, a network that uses attention to mix information across a sequence, also applies the same weights at every position."
+     ],
+     "era": "1989 to 1998"
+    }
+   ]
+  }
+ }
+}
