@@ -1,0 +1,578 @@
+{
+ "date": "2026-11-24",
+ "created": "2026-11-24T15:43:59.403999-05:00",
+ "primerIndex": 3,
+ "throwbackIndex": 3,
+ "sections": {
+  "architectures": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "A 35-billion-parameter model writes in parallel chunks while a compact memory holds everything it wrote before",
+     "dek": "Clover, a new open model, turns a left-to-right text generator into one that fills in several words at once, and keeps a fixed-size memory of the past instead of a growing cache.",
+     "body": [
+      "The Clover-35B-A3B-Preview technical report appeared on arXiv this week. It comes from DiffuSpace, whose first open release this is. The model has 35 billion parameters in total and uses about 3 billion per token. It is licensed under Apache 2.0. It starts from the text backbone of Qwen3.6-35B-A3B, an existing left-to-right model, and converts it into a diffusion language model, meaning one that generates by repeatedly refining a draft instead of emitting one word at a time.",
+      "Recall how an ordinary model writes. It predicts one token, appends it, and repeats, so a 100-token answer needs 100 sequential passes. Block diffusion changes this. The answer is cut into blocks of a few tokens. Each block starts as blanks, and the model fills them all at once over a few refinement rounds. Blocks are still produced in order. As a hypothetical example, 100 tokens in blocks of 4 gives 25 blocks. At 2 refinement rounds each, that is 50 passes instead of 100. Also recall that mixture of experts (MoE) is a layer that sends each token to a few of many small networks. Here each layer has 256 routed experts, with 8 chosen per token, plus one shared expert.",
+      "Clover's main design problem is memory. Inside a block, tokens must see each other in both directions, because all the blanks are filled together. Tokens from earlier blocks, though, are already final. So the report keeps the past in a recurrent memory, using Gated Delta Networks, a layer that compresses all earlier tokens into one fixed-size matrix. Think of a notebook with a fixed number of pages. Each new fact is written over a page, and an old entry fades or is partly erased. The update is \\[ S_t = \\alpha_t S_{t-1}\\left(I - \\beta_t k_t k_t^{\\top}\\right) + \\beta_t v_t k_t^{\\top} \\] This rule fades the old memory, erases what is stored under the current key, and writes the new value. Here S is the memory matrix (value dimension by key dimension), and t is the token position. The scalar α, between 0 and 1, is how much old memory survives. The scalar β, between 0 and 1, is the write strength. The vector k is the key, which says where to write. The vector v is the value, which says what to write. I is the identity matrix. Inside the current block, ordinary softmax attention reads in both directions. The memory readout joins the same softmax as the block's tokens, so the two compete for weight. The report also adds a learnable calibration for block size. It adds a separate convolution branch that looks right, starting at zero so it cannot disturb the pretrained weights at the beginning.",
+      "On results, the launch blog reports 73.6 on SWE-bench Verified, which tests fixing real software issues. It reports 51.7 on Terminal-Bench 2.1, which tests command-line tasks, and 65.3 on τ³ Overall, an agent benchmark. It says these beat the similar-size autoregressive Qwen3.6-35B-A3B and the diffusion models LLaDA2.2 flash and Mercury 2.5. The report measures speed on an NVIDIA H200 graphics chip. There, Clover commits more tokens per verification round than Qwen3.6-35B-A3B paired with DFlash 2, across MATH-500, agent replay, and daily chat. Caveats: these are the developers' own numbers, the release is labeled a preview, and the model is text-only. I could not confirm independent replication or exact speedup factors."
+     ],
+     "why": "It tests whether diffusion-style parallel decoding can match autoregressive quality at 35 billion parameters while sitting on top of the hybrid recurrent-plus-attention designs now common in production models.",
+     "terms": [
+      {
+       "term": "Mixture of experts (MoE)",
+       "def": "A layer that routes each token to a few of many small networks, so only a fraction of the parameters run per token."
+      },
+      {
+       "term": "Block diffusion",
+       "def": "A generation method that fills in a block of several tokens in parallel through repeated refinement, then moves to the next block."
+      },
+      {
+       "term": "Gated Delta Network",
+       "def": "A recurrent layer that compresses past tokens into a fixed-size matrix, fading old content and overwriting entries by key."
+      },
+      {
+       "term": "Softmax attention",
+       "def": "The standard attention that weights earlier tokens by how well their keys match a query, normalized so the weights sum to one."
+      },
+      {
+       "term": "Diffusion language model",
+       "def": "A text model that generates by starting from masked placeholders and refining them over several rounds, instead of predicting strictly left to right."
+      }
+     ],
+     "sources": [
+      {
+       "title": "Clover-35B-A3B-Preview Technical Report (arXiv)",
+       "url": "https://arxiv.org/abs/2611.24636"
+      },
+      {
+       "title": "Clover-35B-A3B-Preview: A New Way for Intelligence (Hugging Face blog)",
+       "url": "https://huggingface.co/blog/Diffuspace/clover-35b-a3b-preview"
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "Clover turns a mixture-of-experts model into a block-diffusion model that fills several tokens per pass.",
+      "A Gated Delta Network keeps a fixed-size memory of earlier blocks, and bidirectional softmax attention handles tokens inside the current block.",
+      "The reported benchmark and speed wins come from the developers and a preview release, so independent checks are still needed."
+     ],
+     "deeper": [
+      "Start with how an ordinary language model writes. A token is a word or word piece. An autoregressive model (one that writes left to right) predicts one token, appends it, and repeats. A 100-token answer therefore needs 100 sequential passes through the network. Recall also that a parameter is a learned number, and that mixture of experts (MoE) is a layer that sends each token to a few of many small networks. Clover-35B-A3B-Preview, from DiffuSpace, has 35 billion parameters in total but uses about 3 billion per token. Each layer has 256 routed experts, 8 chosen per token, plus one shared expert. The report appeared on arXiv, a public preprint server, and the weights are under Apache 2.0, a permissive open license.",
+      "Clover starts from the text backbone (the core network) of Qwen3.6-35B-A3B, an existing left-to-right model. It converts that backbone into a diffusion language model, one that generates by repeatedly refining a draft. Think of a teacher filling in a row of blanks, then rereading the row and fixing it. The answer is cut into blocks of a few tokens. Each block starts as blanks, and the model fills all of them at once over a few refinement rounds. Blocks still come in order. In a hypothetical case, 100 tokens in blocks of 4 gives 25 blocks. At 2 rounds each, that is 50 passes instead of 100.",
+      "The design problem is memory. Inside a block, tokens must see each other in both directions, since they are filled together. Earlier blocks are final, so they can be compressed. Clover keeps them in a recurrent memory, meaning a state updated step by step. It uses Gated Delta Networks, a layer that squeezes all earlier tokens into one fixed-size matrix. This differs from a key-value cache, which stores the keys and values of earlier tokens so they are not recomputed, but grows with every token. Picture a notebook with a fixed number of pages. Each new fact is written over a page, and an old entry fades or is partly erased.",
+      "The update is",
+      "\\[ S_t = \\alpha_t S_{t-1}\\left(I - \\beta_t k_t k_t^{\\top}\\right) + \\beta_t v_t k_t^{\\top} \\]",
+      "Intuitively, it fades the old memory, erases what is stored under the current key, and writes the new value. Here \\(S_t\\) is the memory matrix (value dimension by key dimension) after token \\(t\\), and \\(t\\) is the token position. The scalar \\(\\alpha_t\\), between 0 and 1, is how much old memory survives. The scalar \\(\\beta_t\\), between 0 and 1, is the write strength. The vector \\(k_t\\) is the key, with length equal to the key dimension, and it says where to write. The vector \\(v_t\\) is the value, with length equal to the value dimension, and it says what to write. \\(I\\) is the identity matrix, which changes nothing when multiplied. The product \\(k_t k_t^{\\top}\\) is an outer product, a matrix that picks out the direction of the key.",
+      "A tiny example makes this concrete. Let the key dimension be 2 and the value dimension be 1. Take \\(k=(1,0)\\), \\(\\beta=1\\), \\(v=7\\), and old memory \\(S_{t-1}=[3,\\,5]\\). With \\(\\alpha=1\\), the term \\(I-kk^{\\top}\\) zeroes the first slot, giving \\([0,5]\\). Writing adds \\([7,0]\\), so \\(S_t=[7,5]\\). The slot under the key was replaced, and the other slot was untouched. With \\(\\alpha=0.5\\), the old part becomes \\([0,2.5]\\), so \\(S_t=[7,2.5]\\).",
+      "Inside the current block, ordinary softmax attention reads in both directions. Softmax attention scores every visible token, then turns the scores into weights that sum to 1. The memory readout joins that same softmax, so the memory and the block's tokens compete for weight. The report also adds a learnable calibration for block size. It adds a separate convolution branch, a small filter that slides over neighbors, which looks rightward. That branch starts at zero, so it cannot disturb the pretrained weights at first.",
+      "Compared with earlier diffusion models, the pitch is a single design: parallel blocks, a fixed-size past, and an inherited, already-trained backbone. The launch blog reports 73.6 on SWE-bench Verified (fixing real software issues), 51.7 on Terminal-Bench 2.1 (command-line tasks), and 65.3 on τ³ Overall (an agent benchmark). It says these beat Qwen3.6-35B-A3B, an autoregressive model of similar size, and the diffusion models LLaDA2.2 flash and Mercury 2.5. For speed, the report uses an NVIDIA H200, a graphics processing unit (GPU). Clover commits more tokens per verification round than Qwen3.6-35B-A3B paired with DFlash 2, a speed-up system. This holds on MATH-500, agent replay, and daily chat.",
+      "The limits are plain. These are the developers' own numbers. The release is a preview, and the model is text-only. I could not confirm independent replication or exact speedup factors. Open questions remain: how a fixed-size memory behaves over very long contexts, and how much the memory-versus-block competition in softmax costs or helps."
+     ]
+    }
+   ]
+  },
+  "training": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "Giving a fine-tune more room can break it: a low-rank adapter fell from 73% to under 5% accuracy",
+     "dek": "A paper posted November 20 reports that when a language model is trained with answer-checking rewards, enlarging a popular compact adapter can abruptly destroy learning, while differently structured adapters stay stable.",
+     "body": [
+      "On November 20, 2026, Allan Kazakov and a co-author posted a paper titled Structure Over Scale. It asks how much of a model must change when you train it by reinforcement learning with verifiable rewards (RLVR), meaning the model is rewarded only when an automatic checker confirms its final answer. The paper reports that <cite index=\"58-1\">under a common cold-start GRPO protocol, LoRA shows rank collapse: performance stays stable at low rank, then fails abruptly as rank increases</cite>. <cite index=\"58-2\">On DeepMath-Hard, accuracy drops from 73.1% at rank 64 to 4.7% at rank 128.</cite>",
+      "Here is the reminder. Group relative policy optimization (GRPO) samples several answers per prompt, scores each, and pushes up the ones that beat the group average. Low-Rank Adaptation (LoRA) freezes the pretrained weights and learns a small correction instead. Picture editing a huge spreadsheet by adding one thin overlay rather than rewriting every cell. The rank r is the overlay's thickness. Full fine-tuning, by contrast, updates every weight.",
+      "The mechanism is short. For one weight matrix, the adapted weights are \\[ W' = W + \\Delta W, \\qquad \\Delta W = B A. \\] This says the model keeps its old weights and adds a correction built from two thin matrices. Here W is the frozen d-by-k weight matrix, B has shape d by r, A has shape r by k, and r is the rank, the number of directions the correction may use. For d = k = 4096, full training touches 16,777,216 numbers in that matrix. Rank 16 trains 16 × (4096 + 4096) = 131,072. Rank 128 trains 1,048,576, which is 6.25% of the full count. Intuition says more rank means more freedom and so better results. The authors argue the geometry of the update matters too. They test Weight-Decomposed Low-Rank Adaptation (DoRA) and Quantum-Informed Tensor Adaptation (QuanTA). These alternative adapters <cite index=\"59-1\">remain stable over a wider tested region and are competitive with full fine-tuning while updating under 0.6% of parameters</cite>.",
+      "The caveats are large. The paper itself notes that earlier work by Schulman and Lab <cite index=\"57-5\">found rank-16 LoRA matching full fine-tuning and no high-rank collapse in their setup</cite>. The authors therefore say collapse is <cite index=\"59-5\">a rank–batch–optimization stability boundary for unconstrained LoRA, not a fixed universal rank cutoff</cite>. Their collapse appears at batch size 64, and raising batch size alone did not rescue high-rank LoRA. They also suggest the effect may be tied to less mature base models. So treat this as a warning to sweep rank and learning-rate schedule when running RLVR with adapters. It is not a rule that high rank always fails."
+     ],
+     "why": "Many teams use compact adapters to make reinforcement learning on language models affordable, and this shows that simply adding capacity can silently destroy a run.",
+     "terms": [
+      {
+       "term": "Reinforcement learning with verifiable rewards (RLVR)",
+       "def": "Training a model with reinforcement learning where an automatic checker, such as a math answer matcher, supplies the reward."
+      },
+      {
+       "term": "Group relative policy optimization (GRPO)",
+       "def": "A reinforcement learning method that samples a group of answers per prompt and rewards those scoring above the group average."
+      },
+      {
+       "term": "Low-Rank Adaptation (LoRA)",
+       "def": "A fine-tuning method that freezes the pretrained weights and learns a small correction made of two thin matrices whose shared inner size is the rank."
+      },
+      {
+       "term": "Weight-Decomposed Low-Rank Adaptation (DoRA)",
+       "def": "A variant of LoRA that separates each weight's size from its direction and adapts them separately."
+      },
+      {
+       "term": "Quantum-Informed Tensor Adaptation (QuanTA)",
+       "def": "A structured adapter that builds the weight correction from several small tensor pieces, so the update can reach high rank with few parameters."
+      }
+     ],
+     "sources": [
+      {
+       "title": "Structure Over Scale: Rethinking Adaptation for Reinforcement Learning with Verifiable Rewards (arXiv abstract)",
+       "url": "https://arxiv.org/abs/2611.27148"
+      },
+      {
+       "title": "Structure Over Scale (full text)",
+       "url": "https://arxiv.org/pdf/2611.27148"
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "In one reinforcement learning setup, a LoRA adapter went from 73.1% accuracy at rank 64 to 4.7% at rank 128.",
+      "Adapters with different structure, such as DoRA and QuanTA, stayed stable and matched full fine-tuning while training under 0.6% of parameters.",
+      "Another group found no collapse at high rank under different settings, so the failure depends on rank, batch size and optimizer settings together."
+     ],
+     "deeper": [
+      "Start with the prerequisites. Reinforcement learning with verifiable rewards (RLVR) trains a model by rewarding it only when an automatic checker confirms its final answer, such as a correct math result. Group relative policy optimization (GRPO) is the update rule often used for this. It samples several answers to one prompt, scores each, and pushes up the answers that beat the group average. Fine-tuning means continuing to train a pretrained model. Full fine-tuning updates every weight, where a weight is one learned number in the network. Low-Rank Adaptation (LoRA) instead freezes the pretrained weights and learns a small correction.",
+      "Picture a huge spreadsheet. Full fine-tuning rewrites every cell. LoRA lays one thin transparent overlay on top and edits only the overlay. The rank r is the overlay's thickness. Recall that a matrix's rank is the number of independent directions it can act along. A low-rank correction can only nudge the layer along a few directions.",
+      "A November 20, 2026 paper, Structure Over Scale, by Allan Kazakov and a co-author, tested this under a common cold-start GRPO protocol. In cold-start training, reinforcement learning begins from the base model. On DeepMath-Hard, a benchmark of difficult math problems, accuracy fell from 73.1% at rank 64 to 4.7% at rank 128. Performance was stable at low rank and then failed abruptly. The authors call this rank collapse.",
+      "Now the mathematics. For one weight matrix, the adapted weights are",
+      "\\[ W' = W + \\Delta W, \\qquad \\Delta W = B A. \\]",
+      "This says the model keeps its old weights and adds a correction built from two thin matrices. Here \\(W'\\) is the adapted weight matrix, and \\(W\\) is the frozen pretrained matrix of shape d by k. \\(\\Delta W\\) is the learned correction, also d by k. \\(B\\) has shape d by r and \\(A\\) has shape r by k. The rank r is the number of directions the correction may use. Only \\(A\\) and \\(B\\) are trained.",
+      "The savings are easy to count. Take d = k = 4096. The full matrix has 4096 × 4096 = 16,777,216 numbers. Rank 16 trains 16 × (4096 + 4096) = 131,072 numbers, about 0.78% of the full count. Rank 128 trains 1,048,576, which is 6.25%. So the collapsing setting is still a small fraction of the matrix, and parameter count alone does not explain the failure.",
+      "A small GRPO example shows what is being pushed. Suppose four sampled answers receive rewards 1, 0, 0, 1. The group average is 0.5, and the standard deviation (typical spread around that average) is 0.5. Each answer's score is",
+      "\\[ \\hat{a}_i = \\frac{r_i - \\bar r}{s}, \\]",
+      "which measures how much better one answer is than its group, in units of spread. Here \\(\\hat{a}_i\\) is the advantage of answer i, \\(r_i\\) is its reward, \\(\\bar r\\) is the group's mean reward, and \\(s\\) is the group's standard deviation. The advantages are +1, −1, −1, +1. Correct answers are pushed up and wrong ones pushed down. Those pushes flow into \\(A\\) and \\(B\\).",
+      "The authors argue that the geometry of the update matters, not just its size. They test Weight-Decomposed Low-Rank Adaptation (DoRA), which splits each weight into a magnitude and a direction and adapts them separately. They also test Quantum-Informed Tensor Adaptation (QuanTA), another structured adapter. Both remained stable over a wider tested region and were competitive with full fine-tuning while updating under 0.6% of parameters. Plain LoRA is called unconstrained because nothing limits how its correction grows.",
+      "The caveats are large. Earlier work by Schulman and Lab found rank-16 LoRA matching full fine-tuning, with no high-rank collapse in their setup. The authors therefore describe collapse as a rank–batch–optimization stability boundary for unconstrained LoRA, not a fixed universal rank cutoff. Batch size is how many examples feed each update. Collapse appeared at batch size 64, and raising batch size alone did not rescue high-rank LoRA. They also suggest the effect may be tied to less mature base models.",
+      "Open questions remain. Why does failure arrive abruptly rather than gradually? Which part of the optimization interacts badly with high rank? Do the structured adapters stay stable at larger scales? For practitioners, the safe reading is a warning, not a rule. When running RLVR with adapters, sweep the rank and the learning-rate schedule, and do not assume more rank is better."
+     ]
+    }
+   ]
+  },
+  "theory": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "Grokking may be a search with a known destination, and a new paper computes that destination before training",
+     "dek": "A preprint from 23 November argues that the long delay before a network suddenly generalizes is the time it spends hunting for one specific low-dimensional slice of its internal space, and that on a family of algebra tasks this slice can be worked out in advance.",
+     "body": [
+      "<cite index=\"48-3\">On 23 November 2026, Sunjae Jeong, Jaeseung Kim and Hyoseok Hwang posted a preprint on grokking, the phenomenon in which a network generalizes long after it has memorized its training data.</cite> Many explanations exist for the delay. <cite index=\"48-5,48-6\">The authors say none of them can say before training where the network is heading, so they cannot be tested against each other. They show that on group tasks this destination can be computed from the task itself before training begins.</cite>",
+      "Recall the setup. A group is a set with a rule for combining two elements, such as clock arithmetic. In a group task the network must complete the group's multiplication table: given elements a and b, predict their product. Take the cyclic group of order 5. Its table has 5 × 5 = 25 entries. Train on 15 of them and hold out 10. A network can memorize the 15 quickly. Grokking is the long wait before it also gets the other 10 right. A subspace is a flat, lower-dimensional slice of a vector space. A representation is the vector of numbers a network uses internally to stand for an input.",
+      "Picture a hiker crossing a foggy range who must find one particular pass. The delay is the time spent searching. The authors' claim is that the pass is a specific low-dimensional subspace of the network's representations. <cite index=\"51-4,51-5\">Generalization begins when the network finds it. They compute this subspace from the task and prove it is essentially unique (Theorem 1).</cite> <cite index=\"50-8\">It is built from projectors that the group itself provides.</cite> A projector keeps only the part of a vector that lies in the subspace:",
+      "\\[ \\tilde{h} = P_S \\, h \\]",
+      "This equation strips a hidden vector down to the component that matters for the group structure. Here h is the network's internal representation of an input, a vector of length d. P_S is a d-by-d projection matrix. S is the right subspace. And h-tilde is the filtered vector, also of length d. Because P_S comes from the multiplication table, it is known before any training step.",
+      "Knowing the destination makes the hypothesis testable. <cite index=\"48-8,48-9\">When the network is given the right subspace from the start, the delay disappears. When the right subspace is taken away, accuracy stops at a ceiling that is computed before training.</cite> <cite index=\"51-9\">A random subspace never fits the training set.</cite> Caveats matter here. <cite index=\"51-10\">On tasks without algebraic structure, the right subspace is undefined.</cite> The evidence comes from small algebra tasks in a single new preprint. Whether language models have a comparable hidden destination is untested."
+     ],
+     "why": "If delayed generalization can be predicted from the task's structure, grokking becomes a falsifiable hypothesis that can be tested against rival explanations, and not just a puzzling curve to describe.",
+     "terms": [
+      {
+       "term": "Grokking",
+       "def": "A network first memorizes its training set, then much later suddenly generalizes to unseen examples."
+      },
+      {
+       "term": "Group (in mathematics)",
+       "def": "A set with a combining rule, like addition on a clock face, that has an identity element and inverses."
+      },
+      {
+       "term": "Subspace",
+       "def": "A flat, lower-dimensional slice of a larger vector space, such as a plane inside 3D space."
+      },
+      {
+       "term": "Projector",
+       "def": "A matrix that keeps only the part of a vector lying in a chosen subspace and discards the rest."
+      },
+      {
+       "term": "Representation",
+       "def": "The vector of numbers a network uses internally to stand for an input."
+      }
+     ],
+     "sources": [
+      {
+       "title": "Grokking as a Subspace Search: Computing the Destination Before Training (arXiv abstract)",
+       "url": "https://arxiv.org/abs/2611.30116"
+      },
+      {
+       "title": "Grokking as a Subspace Search (arXiv full text)",
+       "url": "https://arxiv.org/html/2611.30116"
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "Grokking is the long gap between memorizing training data and generalizing to unseen data.",
+      "On group tasks, the authors compute before training the specific low-dimensional subspace that the network must find, and they treat the delay as the time it spends searching for it.",
+      "Handing the network that subspace removes the delay, which suggests the delay is not an unavoidable cost of generalizing on these tasks, but the result is shown only for algebra tasks."
+     ],
+     "deeper": [
+      "Start with the prerequisites. A network generalizes when it gets inputs it never saw during training right. It memorizes when it only gets the training examples right. Grokking is the odd case where memorization comes first and generalization arrives much later. Recall that a group is a set with a rule for combining two elements, such as clock arithmetic. In a group task the network sees elements a and b and must predict their product. For the cyclic group of order 5, the multiplication table has 5 × 5 = 25 entries. Train on 15 and hold out 10. Memorizing the 15 is quick. Getting the other 10 right is what takes the long wait.",
+      "Now the intuition. Picture a hiker crossing a foggy range who must reach one particular pass. Wandering in the fog is the delay. Reaching the pass is generalization. Many explanations of the delay exist, but none of them could say before training where the network was heading. Without a known destination, the explanations could not be tested against each other. The preprint by Sunjae Jeong, Jaeseung Kim and Hyoseok Hwang, posted on 23 November 2026, says that on group tasks the destination can be computed from the task itself.",
+      "The mechanism has three steps. First, a representation is the vector of numbers the network uses internally to stand for an input. Second, a subspace is a flat, lower-dimensional slice of the space of such vectors, like a plane inside three-dimensional space. The authors claim the pass is one specific low-dimensional subspace of the representations. Third, generalization begins when the network finds it. They compute this subspace from the task and prove it is essentially unique (Theorem 1, meaning no other subspace does the same job). It is built from projectors that the group itself provides.",
+      "A projector keeps only the part of a vector that lies in the subspace:",
+      "\\[ \\tilde{h} = P_S \\, h \\]",
+      "This strips a hidden vector down to the component that matters for the group structure. Here \\(h\\) is the network's internal representation of an input, a vector of length \\(d\\). \\(P_S\\) is a \\(d\\)-by-\\(d\\) projection matrix. \\(S\\) is the right subspace. \\(\\tilde{h}\\) is the filtered vector, also of length \\(d\\). Because \\(P_S\\) comes from the multiplication table, it is known before any training step.",
+      "A projector has one more textbook property. Applying it twice changes nothing:",
+      "\\[ P_S P_S = P_S \\]",
+      "Once a vector has been flattened onto the subspace, flattening it again leaves it where it is. Here \\(P_S\\) is the same \\(d\\)-by-\\(d\\) matrix as above.",
+      "Here is a small numeric picture. This is my own toy, not from the paper. Take \\(d = 2\\) and let \\(S\\) be the horizontal axis. Then \\(P_S\\) has rows (1, 0) and (0, 0). For \\(h = (3, 4)\\), the filtered vector is \\(\\tilde{h} = (3, 0)\\). Applying \\(P_S\\) again gives (3, 0), as the second equation says. The real subspaces are higher-dimensional, but the action is the same. One part is kept and the rest is discarded.",
+      "Back to the group table. A network that memorizes 15 of 25 entries is right on 60% of the full table. On the 10 held-out entries, a blind guess among 5 possible products succeeds 1 time in 5, or about 2 of 10 on average. Grokking is the climb from that level to all 10.",
+      "Knowing the destination makes the hypothesis testable, and the authors test it two ways. When the network is given the right subspace from the start, the delay disappears. When the right subspace is taken away, accuracy stops at a ceiling that is computed before training. A random subspace never fits the training set.",
+      "Compared with earlier work, the change is in what can be predicted. Earlier explanations described the search after the fact. This one names the target in advance, so it can be intervened on directly. Handing the network the target removes the search, and removing the target caps performance.",
+      "The limits are real. On tasks without algebraic structure, the right subspace is undefined, so the method has nothing to compute. The evidence comes from small algebra tasks in a single new preprint. Whether language models have a comparable hidden destination is untested. It is also open whether the same idea can be adapted to tasks that are only approximately algebraic."
+     ]
+    }
+   ]
+  },
+  "practice": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "Long agent sessions keep their memory: a serving stack now spills cached context to host memory and shared disk",
+     "dek": "A Kubernetes-based serving project showed how a trillion-scale open model can keep the working memory of long agent conversations across overflow tiers instead of recomputing it.",
+     "body": [
+      "On November 23, 2026, the llm-d project published an engineering write-up on making SGLang a first-class engine alongside vLLM. SGLang and vLLM are both open-source programs that run language models for many users. llm-d is an open-source layer that runs on Kubernetes, software that schedules programs across a cluster, and routes requests to those engines. The demonstration serves GLM-5.2, an open-weight model from Zhipu AI, on NVIDIA H200 graphics processors (GPUs) on Google Cloud. The new piece is tiered caching: context that no longer fits in GPU memory moves to host memory and then to shared storage, instead of being thrown away.",
+      "Recall that a key-value (KV) cache stores the keys and values of earlier tokens so the model never recomputes them. Prefix caching reuses that stored work when a new request starts with the same text as an old one. Agents resend a long history on every turn, so reuse pays off a lot. The catch is that GPU memory is small. Picture a desk, a bookshelf, and a warehouse. The desk is GPU memory: fast and tiny. The bookshelf is host memory (dynamic random-access memory, DRAM): slower and much larger. The warehouse is shared disk: slowest and largest.",
+      "SGLang's Hierarchical Cache, called HiCache, is the shelving system. In the llm-d recipe, the prefill workers, which read the prompt before generation starts, push evicted cache blocks into a host-memory tier. That tier is 100 GB per GPU rank, about 1.93 million tokens per rank. An optional third tier writes to a shared Google Cloud Managed Lustre file system, which any rank can read. The router then sends each request toward the worker that already holds its prefix. The payoff is easy to write down: \\[ N_{\\text{recompute}} = (1-h)\\,n \\] This gives the number of tokens the GPU must process again. Here \\(n\\) is the prompt length in tokens, and \\(h\\) is the fraction of those tokens found in some cache tier, between 0 and 1. With \\(n = 100{,}000\\) and \\(h = 0.9\\), only 10,000 tokens are recomputed. The numbers also imply a per-token size. By my arithmetic, 33.9 million tokens occupying 1.7 tebibytes is roughly 55 kilobytes per token.",
+      "The benchmarks are in a pull request. Adding the shared-storage tier persisted 1.7 tebibytes of cache, covering 33.9 million unique tokens. Throughput stayed within 8 to 9 percent of the host-memory-only setup. Fetches that crossed ranks through the shared tier hit 90.3 to 92.9 percent of the time. The caveats are real. This is one topology: one prefill replica and one decode replica, each spanning eight GPUs. The numbers come from the project's own tuning, not an independent study. The hit rate describes shared-tier prefetches, not every request. The pull request also does not show how the tiers compare with simply recomputing the prompt."
+     ],
+     "why": "As agent workloads make context longer and more reusable, the bottleneck shifts from computing attention to storing and finding cached state, which makes memory tiering and cache-aware routing core serving design.",
+     "terms": [
+      {
+       "term": "Key-value (KV) cache",
+       "def": "Stored keys and values of earlier tokens, kept so the model does not recompute them for each new token."
+      },
+      {
+       "term": "Prefix caching",
+       "def": "Reusing the stored cache when a new request begins with the same text as an earlier one."
+      },
+      {
+       "term": "Graphics processor (GPU)",
+       "def": "The chip that does most of the matrix math for running a model, with fast but limited memory."
+      },
+      {
+       "term": "Dynamic random-access memory (DRAM)",
+       "def": "The main memory of the host machine, larger and slower than GPU memory."
+      },
+      {
+       "term": "HiCache",
+       "def": "SGLang's hierarchical cache, which spills evicted KV blocks to host memory and shared storage."
+      }
+     ],
+     "sources": [
+      {
+       "title": "Bringing First-Class SGLang Serving to llm-d",
+       "url": "https://llm-d.ai/blog/serving-glm-5-2-sglang-tiered-kv-cache-on-llm-d"
+      },
+      {
+       "title": "perf(glm-5-2): tune SGLang Wide-EP defaults and publish H200 benchmarks (llm-d pull request 2997)",
+       "url": "https://github.com/llm-d/llm-d/pull/2997"
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "Agents resend long histories, so keeping their key-value cache alive across GPU memory, host memory, and shared disk avoids recomputing most of each prompt.",
+      "In llm-d's SGLang recipe for GLM-5.2, the shared-disk tier held 33.9 million tokens at throughput within 8 to 9 percent of the host-memory-only setup.",
+      "The evidence is one eight-GPU-per-replica configuration from the project's own pull request, so treat it as a promising recipe rather than a settled result."
+     ],
+     "deeper": [
+      "Think of a long agent session as a conversation where, every turn, you must re-read the whole transcript before answering. A token is a small chunk of text, a word or word piece, that the model reads as one unit. The key-value (KV) cache saves the keys and values that attention computed for earlier tokens, so the model does not recompute them. Prefix caching reuses that saved work when a new request begins with the same text as an old one. Agents resend their full history each turn, so most of every prompt is a repeat.",
+      "The trouble is space. On November 23, 2026, the llm-d project described how to serve GLM-5.2, an open-weight model from Zhipu AI, on NVIDIA H200 graphics processing units (GPUs), the chips that do the math. llm-d is open-source software on Kubernetes, which schedules programs across a cluster. It routes requests to two open-source engines that run models for many users, vLLM and SGLang. GPU memory is the desk: fast, but tiny. When it fills, the engine evicts, meaning it deletes, old cache blocks. A later turn then pays to rebuild them.",
+      "The fix is shelving. SGLang's Hierarchical Cache, called HiCache, adds two tiers below the desk. Prefill workers, the processes that read the prompt before generation starts, push evicted blocks into host memory, the bookshelf. Host memory is dynamic random-access memory (DRAM), the ordinary main memory of the server. It is slower than GPU memory but far larger. Here it holds 100 GB per rank, where a rank is one GPU's worker process in a group. That is about 1.93 million tokens per rank. An optional third tier, the warehouse, writes to a shared Google Cloud Managed Lustre file system, which any rank can read. The router then sends each request to the worker already holding its prefix. If that worker lacks a block, the block can be fetched from the lower tiers.",
+      "The payoff is one line:",
+      "\\[ N_{\\text{recompute}} = (1-h)\\,n \\]",
+      "It counts the tokens the GPU must process again. Here \\(n\\) is the prompt length in tokens, and \\(h\\) is the fraction of those tokens found in some cache tier, between 0 and 1. A higher \\(h\\) means less repeated work.",
+      "Size sets how much fits on each shelf. The write-up implies a per-token cost:",
+      "\\[ b = \\frac{S}{T} \\]",
+      "This says the average storage per token is total cache size divided by tokens cached. \\(b\\) is bytes per token, \\(S\\) is total cache bytes (1.7 tebibytes, about \\(1.87\\times10^{12}\\) bytes), and \\(T\\) is the token count (33.9 million). The result is roughly 55 kilobytes per token. That is large, because each token stores keys and values at every layer.",
+      "A worked example makes this concrete. Take \\(n = 100{,}000\\) and \\(h = 0.9\\). Then \\(N_{\\text{recompute}} = 0.1 \\times 100{,}000 = 10{,}000\\) tokens, a tenfold cut in prompt work. Storing that prompt costs about \\(100{,}000 \\times 55\\) kilobytes \\(= 5.5\\) gigabytes. A host tier of 1.93 million tokens holds about 19 such prompts per rank. A desk-only cache would hold far fewer.",
+      "Earlier approaches kept prefix caches only in GPU memory, and eviction meant recomputation. Tiering trades that recomputation for a copy over a slower link. Whether the copy wins depends on bandwidth and prompt length.",
+      "The reported results are encouraging. Adding the shared tier persisted 1.7 tebibytes, covering 33.9 million unique tokens. Throughput, the work finished per second, stayed within 8 to 9 percent of the host-memory-only setup. Fetches that crossed ranks through the shared tier hit 90.3 to 92.9 percent of the time.",
+      "The caveats matter. The test used one topology: one prefill replica and one decode replica, each spanning eight GPUs. The numbers come from the project's own tuning, not an independent study. The hit rate covers shared-tier prefetches, not every request. The pull request also never compares the tiers against simply recomputing the prompt. Until that baseline appears, the benefit is plausible but unmeasured. The size of the 8 to 9 percent cost is also unclear, since it could reflect either fetch latency or contention on the shared file system."
+     ]
+    }
+   ]
+  },
+  "robotics": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "A Robot Model Learns Actions as Words From Day One, Not as an Add-On",
+     "dek": "X Square Robot's new model is trained on language, images and robot movements together from the start, and the company says it can attempt hundreds of unseen tasks with no extra training.",
+     "body": [
+      "On November 23, 2026, China's X Square Robot unveiled WALL-OSS-1.0. <cite index=\"31-1\">It is a vision-language-action (VLA) model, meaning one network that turns camera images and an instruction into robot movements, and it starts from a Qwen3.5 base model.</cite> <cite index=\"13-2\">The company reports 55.1% zero-shot success across 312 real-robot tasks.</cite> Zero-shot means the robot gets no task-specific fine-tuning first.",
+      "Recall the usual recipe. Take a finished vision-language model, which already reads images and text, then bolt on an output for robot actions and fine-tune. Think of a translator who learned French and Spanish first, then crams in a third language late in life. X Square instead calls its approach native pretraining. <cite index=\"31-6\">It trains on language, vision-language and robot-action data together from the start, rather than adding actions to a finished vision-language model.</cite>",
+      "The trick is to make actions look like words. A robot arm moves continuously, but a language model predicts discrete tokens, which are small units from a fixed vocabulary. So an action tokenizer compresses a movement into a short token sequence. <cite index=\"35-5\">The team converts continuous trajectories into compact discrete action tokens using an improved version of its earlier X-Tokenizer.</cite> <cite index=\"35-6\">The visual encoder, projection interface and backbone are optimized jointly, while the pretrained tokenizer stays frozen.</cite> Training is autoregressive, meaning the model predicts each next token from the earlier ones. A later stage adds an Action Expert. <cite index=\"35-7\">At inference, it generates action chunks through iterative flow updates.</cite> Flow matching trains a network to predict a velocity that carries noise toward a real action. The loss is \\[ \\mathcal{L}=\\mathbb{E}\\,\\big\\|v_\\theta(a_t,t,c)-(a_1-a_0)\\big\\|^2 \\] and it teaches the network to point along the straight path from noise to the demonstrated action. Here \\(a_0\\) is a noise vector, \\(a_1\\) is the demonstrated action chunk, and \\(t\\in[0,1]\\) is a scalar progress value. The blend \\(a_t=(1-t)a_0+t a_1\\) has the same shape as the action chunk. The symbol \\(c\\) is the image-and-language context, \\(v_\\theta\\) is the Action Expert with weights \\(\\theta\\), and \\(\\mathbb{E}\\) is an average over training samples. For one number, take \\(a_0=0\\), \\(a_1=2\\) and \\(t=0.25\\). Then \\(a_t=0.5\\), and the target velocity is 2.",
+      "Treat the results with care. <cite index=\"31-4\">All scores are the company's own, and the weights are not yet public.</cite> <cite index=\"31-9\">In a cross-site parcel-sorting test, a policy built on WALL-OSS-1.0 kept more than 90% of its speed and success at a second site, while one trained without it lost more than 90% of its success rate.</cite> That test is also the company's own. <cite index=\"33-11\">The checkpoint on Hugging Face is a smaller Qwen3.5-based policy fine-tuned for RoboDojo simulation, and its card says it is not validated on real robots.</cite> So the zero-shot claim cannot yet be checked independently."
+     ],
+     "why": "It tests whether making actions a native part of pretraining beats the common habit of fine-tuning a vision-language model for control, and that question shapes how future robot foundation models will be built.",
+     "terms": [
+      {
+       "term": "Vision-language-action (VLA) model",
+       "def": "A single neural network that takes camera images and a text instruction and outputs robot actions."
+      },
+      {
+       "term": "Action tokenizer",
+       "def": "A module that compresses continuous robot movements into short sequences of discrete tokens, so a language model can predict them like words."
+      },
+      {
+       "term": "Flow matching",
+       "def": "A training method where a network learns a velocity that moves random noise in a straight path toward a real example, here a real action chunk."
+      },
+      {
+       "term": "Autoregressive",
+       "def": "Generating output one token at a time, with each token predicted from the ones before it."
+      },
+      {
+       "term": "Zero-shot",
+       "def": "Attempting a task with no training or fine-tuning on that specific task."
+      }
+     ],
+     "sources": [
+      {
+       "title": "WALL-OSS-1.0: Understand More, Act Better (X Square Robot)",
+       "url": "https://x2robot.com/blogs/wall-oss-1-en/"
+      },
+      {
+       "title": "X Square's Robot Model Scores 55.1% on 312 Unseen Tasks (FourWeekMBA)",
+       "url": "https://fourweekmba.com/ai-x-squares-robot-model-scores-55-1-on-312-unseen-tasks/"
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "WALL-OSS-1.0 trains on language, vision-language and robot-action data together from the start, instead of adding actions to a finished model.",
+      "Actions become discrete tokens through a frozen tokenizer, and a flow-matching Action Expert then produces smooth continuous action chunks.",
+      "The 55.1% zero-shot figure over 312 real tasks is the company's own claim, and the full weights are not yet released."
+     ],
+     "deeper": [
+      "Start with the usual recipe. A vision-language-action (VLA) model is one network that turns camera images and a text instruction into robot movements. Builders typically take a finished vision-language model, which already reads images and text, attach an output for robot actions, and fine-tune. Fine-tuning means continuing to train a pretrained network on a smaller, task-specific dataset. Think of a translator who learned French and Spanish first and then crams in a third language late in life.",
+      "X Square Robot's WALL-OSS-1.0, unveiled on November 23, 2026, takes the other route, which the company calls native pretraining. It starts from Qwen3.5, a family of language models, and trains on language, vision-language and robot-action data together from the start. The key move is to make actions look like words. A language model predicts tokens, which are small units from a fixed vocabulary. A robot arm moves continuously. So an action tokenizer compresses a continuous trajectory into a short sequence of discrete tokens, the way a dance can be written down as a sequence of named steps. The team uses an improved version of its earlier X-Tokenizer for this.",
+      "Training is autoregressive: the model predicts each next token from the tokens before it. Action tokens then become just another kind of next token. The visual encoder (the part that turns images into features), the projection interface (a small layer that maps those features into the language model's input space) and the backbone (the main network) are optimized jointly. The pretrained tokenizer stays frozen, meaning its weights are not updated.",
+      "A later stage adds an Action Expert, a separate network that produces smooth movements. At inference, the stage where the trained model runs, it generates an action chunk, a short block of consecutive future actions, through iterative flow updates. The idea is flow matching. Picture a ball starting at a random point and being pushed along a straight line toward the demonstrated action. The network learns the push, which is a velocity. The loss, the number training tries to shrink, is",
+      "\\[ \\mathcal{L}=\\mathbb{E}\\,\\big\\|v_\\theta(a_t,t,c)-(a_1-a_0)\\big\\|^2 \\]",
+      "It teaches the network to point along the straight path from noise to the demonstrated action. Here \\(a_0\\) is a noise vector and \\(a_1\\) is the demonstrated action chunk, both with the same shape as the chunk. The scalar \\(t\\in[0,1]\\) is progress along the path. The blend \\(a_t=(1-t)a_0+t a_1\\) is the current point on the path, again with the chunk's shape. The symbol \\(c\\) is the image-and-language context. \\(v_\\theta\\) is the Action Expert, with weights \\(\\theta\\), and it outputs a vector shaped like the chunk. The double bars with a square mean squared length, and \\(\\mathbb{E}\\) is an average over training samples. The target \\(a_1-a_0\\) is the constant velocity of the straight line.",
+      "Take one number. Let \\(a_0=0\\), \\(a_1=2\\) and \\(t=0.25\\). Then \\(a_t=0.75\\cdot 0+0.25\\cdot 2=0.5\\), and the target velocity is \\(2-0=2\\). A network that guessed 1.5 would incur a squared error of \\((1.5-2)^2=0.25\\). Moving at velocity 2 for the remaining 0.75 of the path gives \\(0.5+1.5=2\\), which lands on the demonstrated action. At inference, the model starts from noise and takes several small steps along its predicted velocities. That is what \"iterative flow updates\" means.",
+      "Compared with the bolt-on recipe, the difference is when actions enter. Late fine-tuning asks a model that already organized its internal representations around text to make room for movement. Native pretraining lets robot data shape those representations from the beginning. The two-stage design also combines discrete tokens, which fit a language model's training, with flow-based output, which gives continuous chunks.",
+      "The evidence is thin so far. The company reports 55.1% zero-shot success across 312 real-robot tasks. Zero-shot means no task-specific fine-tuning first. All scores are the company's own, and the weights are not yet public. In a cross-site parcel-sorting test, a policy built on WALL-OSS-1.0 kept more than 90% of its speed and success at a second site, while one trained without it lost more than 90% of its success rate. That test is also the company's own.",
+      "The public checkpoint on Hugging Face, a model-sharing site, is a smaller Qwen3.5-based policy fine-tuned for RoboDojo simulation. Its card says it is not validated on real robots. So the zero-shot claim cannot yet be checked independently. It also remains untested whether native pretraining, rather than data volume or tokenizer quality, explains the gains."
+     ]
+    }
+   ]
+  },
+  "discoveries": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "An AI-Assisted Proof of the Riemann Hypothesis Passes a Machine Checker, but No Human-Readable Version Exists",
+     "dek": "An Anthropic mathematician released about 17 million lines of machine-checkable code, written with the AI model Claude, that claims to prove the most famous open problem about prime numbers, and the communities behind the proof-checking software Lean certify that the classical statement is correct.",
+     "body": [
+      "On Friday, November 20, Levent Alpöge, a mathematician at Anthropic, posted a four-page note on his website. He wrote, ‘I believe I have, working with Claude, discovered a proof of the Riemann Hypothesis.’ Claude is Anthropic's large language model, a neural network trained to predict text. Alpöge did not post a human-readable write-up. He said it would be enormous and not worth posting, and a footnote in his note cited a length of more than 250,000 pages. On Monday, November 23, he said that page count was a joke. He released the proof as a Lean library of about 17 million lines of code, developed between October 6 and November 16. Lean is a proof assistant, a programming language whose kernel (a small core program) accepts a theorem only if every step follows from the axioms. His note also claims the generalized hypothesis for Dirichlet L-functions across all moduli and characters. Here a modulus is the period of the sign pattern that defines the character.",
+      "The trick is that nobody needs to read 17 million lines. Think of a notary who stamps only documents that match the rules exactly. People then need to inspect only the statement being stamped. Dozens of people compiled the code, meaning they ran it through Lean's checker, without errors and got the same proof file. Two separate tools then confirmed that Alpöge's theorem is exactly the Riemann hypothesis as Mathlib states it. Mathlib is Lean's shared library of formalized mathematics, and experts had already vetted its definition. On Saturday, November 21, the Lean and Mathlib communities published a joint statement endorsed by the Lean Focused Research Organization (FRO), the non-profit that develops Lean, and by the Mathlib Initiative, which maintains Mathlib. They said they had full confidence in the proof and certified that both the statement and the proof of the Riemann hypothesis are correct. Reports on that statement say it does not mention the generalized version.",
+      "What Claude actually contributed is only partly visible. Alpöge credits Claude with the final steps and wrote, ‘Claude far outpaced me near the finish line.’ He has also said there were many cases where Claude took an insight from a simple toy setting and carried it over to the full proof. In October, OpenAI researchers had announced a proof of a weaker 'quasi-Riemann' hypothesis, so this was not the first AI result in this area. No human-readable argument exists, so the ideas are not yet understood. The Association for Human Mathematics said on November 20 that no human can claim responsibility for the proof, and that no mathematician can confirm with full certainty that it is correct. Alpöge has also said the published Lean code is full of garbage, though he stands by the mathematics. Separately, on the same day, Stanford mathematician Ravi Vakil posted a draft of a human-written, AI-free proof of the generalized hypothesis by Alessandro Maria Masullo. The manuscript is about 940 pages. Reviewers reported problems within hours, and Masullo's former adviser Brian Conrad has said it needs major revision. That claim has not been verified."
+     ],
+     "why": "If it holds up, the problem has fallen to a human-model collaboration, and the result is trusted because a small proof-checking kernel accepted it, not because people read the argument.",
+     "terms": [
+      {
+       "term": "Lean",
+       "def": "A proof assistant whose small trusted kernel accepts a theorem only if every step follows logically from the axioms."
+      },
+      {
+       "term": "Mathlib",
+       "def": "Lean's community-maintained library of formalized mathematics, including expert-vetted definitions such as the Riemann hypothesis."
+      },
+      {
+       "term": "Focused Research Organization (FRO)",
+       "def": "A non-profit built to deliver a specific tool; the Lean FRO develops the Lean proof assistant."
+      },
+      {
+       "term": "Generalized Riemann hypothesis (GRH)",
+       "def": "The same claim about zero locations, applied to Dirichlet L-functions, which are zeta-like functions twisted by a character."
+      },
+      {
+       "term": "Analytic continuation",
+       "def": "A way of extending a function defined by a formula in one region to a larger region of the complex plane."
+      }
+     ],
+     "sources": [
+      {
+       "title": "Lean and Mathlib certify Alpöge's Claude-assisted Riemann hypothesis proof (The Next Web)",
+       "url": "https://thenextweb.com/news/lean-mathlib-certify-riemann-hypothesis-proof-alpoge-claude"
+      },
+      {
+       "title": "Quanta Magazine: As mathematicians race to verify AI Riemann proof, a human proof emerges",
+       "url": "https://www.quantamagazine.org/updates/transformation/"
+      },
+      {
+       "title": "Nature: Mathematicians astounded by AI and human-written proofs of iconic Riemann hypothesis",
+       "url": "https://www.nature.com/articles/d41586-026-03812-7"
+      }
+     ],
+     "background": [
+      "Picture a long list of numbers that encodes where the primes sit, and ask where that list hits zero. The Riemann zeta function is that encoding. For a complex number \\(s\\) (a number with a real part and an imaginary part) whose real part is greater than 1, it is defined by the sum \\[\\zeta(s)=\\sum_{n=1}^{\\infty} n^{-s}.\\] This sum adds up every positive integer raised to the power minus \\(s\\). For example, at \\(s=2\\) it is \\(1+1/4+1/9+\\dots\\), which is about 1.645. Here \\(\\zeta(s)\\) is the function's value (a complex number), \\(n\\) is a positive integer that runs through 1, 2, 3 and so on, \\(s\\) is a complex number, and \\(\\operatorname{Re}\\) means 'real part'. The function is extended to the rest of the complex plane by analytic continuation, a standard way of stretching a function past the region where its formula converges. A zero is an input where the function equals 0. The zeros at the negative even integers are called trivial, and all others are called nontrivial. Bernhard Riemann posed the question in 1859. The Riemann hypothesis says that every nontrivial zero \\(\\rho\\) has \\(\\operatorname{Re}(\\rho)=1/2\\). The first such zero sits near \\(1/2+14.1347i\\), and its real part is one half, as the hypothesis predicts. The hypothesis matters because it controls how evenly primes are spread. It is equivalent to the bound \\[|\\pi(x)-\\operatorname{Li}(x)|=O(\\sqrt{x}\\log x).\\] In words, the true prime count never strays from a smooth estimate by more than about the square root of \\(x\\), times a logarithm. Here \\(x\\) is a real number of at least 2, \\(\\pi(x)\\) counts the primes up to \\(x\\), \\(\\operatorname{Li}(x)\\) is the smooth logarithmic-integral estimate of that count, and the vertical bars take the size of the gap between them. \\(O(\\cdot)\\) means 'at most a fixed constant times', \\(\\sqrt{x}\\) is the square root of \\(x\\), and \\(\\log x\\) is the natural logarithm of \\(x\\). The problem is part of Hilbert's list of 23 problems (the eighth, from 1900) and one of the Clay Mathematics Institute's seven million-dollar Millennium Prize Problems (2000).",
+      "The generalized Riemann hypothesis (GRH) makes the same claim for Dirichlet L-functions. These are zeta-like functions twisted by a periodic sign pattern called a character, and the ordinary hypothesis is the case of the trivial character. Much of number theory proves results conditional on GRH, meaning 'assuming GRH is true'. Partial progress has been about what share of the zeros are known to lie on the line \\(\\operatorname{Re}(s)=1/2\\). Hardy showed in 1914 that infinitely many do. Selberg showed in 1942 that a positive fraction do. Levinson raised the fraction to more than one third in 1974, and Conrey to more than two fifths in 1989. In 2020 Pratt, Robles, Zaharescu and Zeindler reached more than five twelfths, roughly 42 percent. Before the events below, nobody had shown that all the zeros lie on the line."
+     ],
+     "status": "The Lean and Mathlib communities, endorsed by the Lean FRO and the Mathlib Initiative, certified on November 21 that the code compiles and proves exactly Mathlib's vetted statement of the classical Riemann hypothesis, but the result is not peer-reviewed, no human-readable proof exists, the certification reportedly does not cover the generalized version, some further independent checks were reportedly still running on November 22, and the Clay Mathematics Institute still lists the problem as unsolved.",
+     "recap": [
+      "Alpöge released a Lean proof of about 17 million lines of code, found with Claude, on November 20.",
+      "The Lean and Mathlib communities say the code compiles and proves exactly Mathlib's vetted statement, so trust rests on the checker rather than on anyone reading all the code.",
+      "Mathematicians still lack a human-readable explanation, the generalized claim is not covered by the certification, and the rival human-written draft is unverified."
+     ],
+     "deeper": [
+      "Start with the object. The Riemann zeta function packs information about primes into a single function of a complex number, meaning a number with a real part and an imaginary part. For \\(s\\) with real part above 1, it is",
+      "\\[\\zeta(s)=\\sum_{n=1}^{\\infty} n^{-s}.\\]",
+      "This adds up every positive integer raised to the power minus \\(s\\). Here \\(\\zeta(s)\\) is the output (a complex number), \\(n\\) is a positive integer running through 1, 2, 3 and so on, and \\(s\\) is the complex input. At \\(s=2\\) the sum is \\(1+1/4+1/9+\\dots\\). Three terms give about 1.361, four give about 1.424, and the full sum settles near 1.645. Analytic continuation, a standard way of stretching a function past the region where its formula converges, extends \\(\\zeta\\) to the whole plane. A zero is an input where the function equals 0. The Riemann hypothesis says every nontrivial zero \\(\\rho\\) has real part exactly one half. The first one sits near \\(1/2+14.1347i\\).",
+      "Why care? The hypothesis is equivalent to",
+      "\\[|\\pi(x)-\\operatorname{Li}(x)|=O(\\sqrt{x}\\log x).\\]",
+      "This says the true prime count stays close to a smooth estimate. Here \\(x\\) is a real number of at least 2, \\(\\pi(x)\\) counts primes up to \\(x\\), \\(\\operatorname{Li}(x)\\) is the logarithmic-integral estimate of that count, and the bars take the size of the gap. \\(O(\\cdot)\\) means \"at most a fixed constant times\", and \\(\\log x\\) is the natural logarithm. At \\(x=10{,}000\\), \\(\\sqrt{x}=100\\) and \\(\\log x\\approx 9.21\\), so the allowed gap scales like 921, far smaller than \\(x\\) itself.",
+      "Now the mechanism, with the claim that matters most: nobody needs to read the proof. Picture a notary who stamps only documents that follow the rules exactly. Lean is a proof assistant, a programming language whose kernel (a small core program) accepts a theorem only if every step follows from the axioms, the starting assumptions. Alpöge, a mathematician at Anthropic, says he worked with Claude, Anthropic's large language model (a neural network trained to predict text), and released about 17 million lines of Lean. Dozens of people compiled it, meaning they ran it through the kernel, with no errors and the same proof file. Humans then only need to check the stamped statement. Two separate tools confirmed it matches the Riemann hypothesis as Mathlib states it. Mathlib is Lean's shared library of formalized mathematics, and experts had already vetted its definitions. The Lean Focused Research Organization (FRO), the non-profit that develops Lean, and the Mathlib Initiative, which maintains Mathlib, issued a joint statement certifying the statement and proof. Reports say it does not mention the generalized version.",
+      "That generalized Riemann hypothesis (GRH) makes the same claim for Dirichlet L-functions. These are zeta-like functions twisted by a periodic sign pattern called a character, whose period is the modulus. Alpöge's note claims this too, across all moduli and characters. Much of number theory is proved conditional on GRH, meaning \"assuming it is true\".",
+      "Compare this with earlier work. Progress was measured by the share of zeros proved to lie on the line. Hardy showed infinitely many in 1914. Selberg showed a positive fraction in 1942. Levinson reached more than one third, Conrey more than two fifths, and Pratt, Robles, Zaharescu and Zeindler more than five twelfths, roughly 42 percent. Nothing reached all zeros. In October, OpenAI researchers announced a proof of a weaker \"quasi-Riemann\" hypothesis. A human-written draft of the generalized hypothesis by Alessandro Maria Masullo, about 940 pages, drew reported problems within hours. Brian Conrad has said it needs major revision, which is unverified. The Lean route differs in kind. Trust comes from a small kernel, not from experts following an argument.",
+      "The limitations are real. The Lean checker guarantees that the code proves the stated theorem. It cannot tell you whether the statement captures what mathematicians mean, which is why the statement checks matter. No human-readable argument exists, so the ideas are not yet understood. The Association for Human Mathematics said no human can claim responsibility and no mathematician can be fully certain. Alpöge says the code is full of garbage, though he stands by the mathematics. Claude's role is only partly visible. He credits it with the final steps and with carrying insights from toy settings to the full proof. The open questions are whether the proof can be distilled into something people can read, and what it implies for the generalized claim."
+     ],
+     "checked": true
+    }
+   ]
+  },
+  "primer": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "Scaling Laws: How to Split a Fixed Training Budget Between Model Size and Data",
+     "dek": "Two landmark studies found that language-model error falls smoothly as models and datasets grow, then disagreed about how to divide a fixed budget between them.",
+     "body": [
+      "Suppose you rent a fixed number of graphics processing units (GPUs, chips that do the heavy arithmetic of training) for three months. You must decide how big to make the network and how much text to train it on. Before 2020 teams mostly guessed. In 2020 the popular guess was to make the model enormous: GPT-3, a 175-billion-parameter language model from OpenAI, saw only about 300 billion training tokens. If that split was wrong, millions of dollars bought a worse model than the same money could have bought.",
+      "Think of a restaurant with a fixed budget. You can spend it on a bigger kitchen with more chefs, or on more ingredients. A huge kitchen with one bag of flour wastes the chefs. A tiny kitchen with a warehouse of flour wastes the flour. Somewhere in between is a best mix, and it shifts as the budget grows. The analogy breaks in two places. Training data is not used up, because the model can reread it. And the payoff curves are not arbitrary: they follow clean power laws, which is the surprising empirical finding.",
+      "Here is the vocabulary. A parameter is one learned number (a weight) in the network; we write the count as N. A token is a small chunk of text, such as a word piece; D is the number of tokens trained on. Loss is the average error per token, measured as cross-entropy (how surprised the model is by the true next token); lower is better. Compute, C, is total training work, counted in floating-point operations (FLOPs), meaning individual multiplies and adds. A power law is a relationship where doubling an input multiplies the output by a fixed factor. Compute-optimal means the choice of N and D that gives the lowest loss for a given C.",
+      "A small worked example. Training cost is about 6 FLOPs per parameter per token, so C is roughly 6ND. Take N = 70 billion parameters and D = 1.4 trillion tokens. Then C = 6 × 70e9 × 1.4e12 = 6 × 98e21 = 5.88e23 FLOPs. That is close to the budget of Gopher, a 280-billion-parameter DeepMind language model trained on 300 billion tokens, which costs 6 × 280e9 × 300e9 = 5.04e23. Gopher saw about 1.07 tokens per parameter (300 / 280). The 70-billion-parameter model, called Chinchilla, saw 20 (1.4e12 / 70e9). With a similar budget, Chinchilla was the better model on the benchmarks (standard tests used to compare models) that DeepMind reported.",
+      "Now the general math. Chinchilla's authors fit the loss as a sum of three terms:",
+      "\\[ L(N, D) = E + \\frac{A}{N^{\\alpha}} + \\frac{B}{D^{\\beta}}, \\qquad C \\approx 6ND \\]",
+      "The first equation says loss has a floor plus one penalty for a small model and one for too little data. The second says compute is about six FLOPs for every parameter-token pair. Here L is the scalar loss; E is the irreducible loss, the error left even for a perfect model, because text is partly unpredictable; A and B are fitted positive constants; and α and β are fitted exponents, roughly 0.34 and 0.28. N and D are the scalar parameter and token counts, and C is scalar compute in FLOPs. Minimizing L with C held fixed gives:",
+      "\\[ N_{\\text{opt}} \\propto C^{a}, \\qquad D_{\\text{opt}} \\propto C^{b} \\]",
+      "This says the best N and D each grow as a power of the budget. Here N_opt and D_opt are the best parameter and token counts for a given budget, a and b are the exponents, and the symbol ∝ means proportional to. Kaplan et al. (2020) found a ≈ 0.73 and b ≈ 0.27. Hoffmann et al. (2022) found a ≈ b ≈ 0.5. With 100 times more compute, Kaplan says grow the model about 29 times and the data about 3.5 times. Chinchilla says grow both 10 times. Setting D = 20N in C = 6ND gives C = 120N². With C = 5.88e23, N² = 4.9e21, so N = 7e10: the worked example's 70 billion parameters.",
+      "Common confusions. The figure of 20 tokens per parameter is a fitted rule of thumb, not a law of nature. It also optimizes only training cost, ignoring the cost of serving the model afterwards. Kaplan was not simply wrong. Later analyses suggest that his smaller models, a learning-rate schedule (the plan for how fast the weights are updated over a run) not matched to each run length, and the way he counted parameters skewed the exponents. Lower loss also does not automatically mean better performance on every task, though the two correlate strongly.",
+      "Today almost nobody trains at the Chinchilla ratio, because inference (running the finished model to answer queries) can cost far more than training. Meta's Llama 3 8B, an open-weight model (weights published for anyone to download), was trained on roughly 15 trillion tokens, about 1,900 tokens per parameter. A smaller model trained far past the optimum is cheaper to serve. Mixture of experts (MoE) models use layers that send each token to a few of many smaller sub-networks, which shifts the question to active parameters per token, meaning the parameters actually used for one token. DeepSeek-V3, an open-weight MoE language model, has 671 billion total parameters and 37 billion active. Two pressures now shape the field: the supply of high-quality text is limited, and extra compute spent at answer time, as in reasoning models (models that work through a problem step by step before answering), adds a new scaling axis."
+     ],
+     "why": "Scaling laws turn the choice of model size and data from guesswork into a forecast, and they guide how labs spend very large training budgets.",
+     "terms": [
+      {
+       "term": "Power law",
+       "def": "A relationship where multiplying the input by a fixed factor multiplies the output by another fixed factor, so loss falls as a straight line on a log-log plot."
+      },
+      {
+       "term": "Compute-optimal",
+       "def": "The pairing of model size and training tokens that gives the lowest loss for a fixed training budget."
+      },
+      {
+       "term": "Floating-point operations (FLOPs)",
+       "def": "A count of individual multiplies and adds, used to measure total training work."
+      },
+      {
+       "term": "Irreducible loss",
+       "def": "The error floor that remains even for an ideal model, because natural text is partly unpredictable."
+      },
+      {
+       "term": "Active parameters",
+       "def": "In a mixture-of-experts model, the parameters actually used for one token, which is fewer than the total stored."
+      }
+     ],
+     "sources": [
+      {
+       "title": "Scaling Laws for Neural Language Models (Kaplan et al., 2020)",
+       "url": "https://arxiv.org/abs/2001.08361"
+      },
+      {
+       "title": "Training Compute-Optimal Large Language Models (Hoffmann et al., 2022)",
+       "url": "https://arxiv.org/abs/2203.15556"
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "Loss falls as a smooth power law in parameters, data, and compute, so budgets can be planned in advance.",
+      "Kaplan advised spending extra compute mostly on bigger models; Chinchilla showed model size and data should grow together, at about 20 tokens per parameter.",
+      "Modern models often train well past that ratio because serving cost matters, so compute-optimal for training is not the same as optimal overall."
+     ],
+     "deeper": [
+      "Suppose you rent a fixed number of graphics processing units (GPUs, chips that do the heavy arithmetic of training) for three months. You must choose how big to make the network and how much text to train it on. Before 2020 teams mostly guessed. This explainer covers how to make that choice with evidence instead.",
+      "First, the vocabulary. A parameter is one learned number, or weight, in the network. We write the count as \\(N\\). A token is a small chunk of text, such as a word piece, and \\(D\\) is the number of tokens trained on. Loss is the average error per token, measured as cross-entropy, which is how surprised the model is by the true next token. Lower is better. Compute, \\(C\\), is the total training work, counted in floating-point operations (FLOPs), meaning individual multiplies and adds. A power law is a relationship where doubling an input multiplies the output by a fixed factor. Compute-optimal means the choice of \\(N\\) and \\(D\\) that gives the lowest loss for a given \\(C\\).",
+      "Think of a restaurant with a fixed budget. A huge kitchen with one bag of flour wastes the chefs. A tiny kitchen with a warehouse of flour wastes the flour. The best mix lies between, and it shifts as the budget grows. The analogy breaks in two places. Training data is not used up, because the model can reread it. And the payoff curves follow clean power laws, which is the surprising empirical finding.",
+      "The mechanism has three steps. Train many small models at varied sizes and token counts. Fit a formula for loss as a function of \\(N\\) and \\(D\\). Then, for each budget, find the \\(N\\) and \\(D\\) that minimize that formula. Chinchilla's authors used this recipe. Chinchilla is a 70-billion-parameter language model from DeepMind.",
+      "Their fitted formula and the cost rule are:",
+      "\\[ L(N, D) = E + \\frac{A}{N^{\\alpha}} + \\frac{B}{D^{\\beta}}, \\qquad C \\approx 6ND \\]",
+      "The first equation says loss has a floor, plus one penalty for a small model and one for too little data. The second says compute is about six FLOPs for every parameter-token pair. Here \\(L\\) is the scalar loss. \\(E\\) is the irreducible loss, the error left even for a perfect model, because text is partly unpredictable. \\(A\\) and \\(B\\) are fitted positive constants. The exponents \\(\\alpha\\) and \\(\\beta\\) are fitted, roughly 0.34 and 0.28. \\(N\\) and \\(D\\) are the scalar parameter and token counts, and \\(C\\) is scalar compute in FLOPs. As a check on the power law, doubling \\(N\\) multiplies the model-size penalty by \\(2^{-0.34} \\approx 0.79\\), so each doubling removes about a fifth of it.",
+      "Minimizing \\(L\\) with \\(C\\) held fixed gives:",
+      "\\[ N_{\\text{opt}} \\propto C^{a}, \\qquad D_{\\text{opt}} \\propto C^{b} \\]",
+      "This says the best model size and token count each grow as a power of the budget. \\(N_{\\text{opt}}\\) and \\(D_{\\text{opt}}\\) are the best parameter and token counts for a given budget. The exponents \\(a\\) and \\(b\\) are dimensionless, and \\(\\propto\\) means \"proportional to\".",
+      "Now a worked example. Take \\(N = 70\\) billion and \\(D = 1.4\\) trillion. Then \\(C = 6 \\times 70\\text{e}9 \\times 1.4\\text{e}12 = 6 \\times 9.8\\text{e}22 = 5.88\\text{e}23\\) FLOPs. Gopher, a 280-billion-parameter DeepMind model trained on 300 billion tokens, cost \\(6 \\times 280\\text{e}9 \\times 300\\text{e}9 = 5.04\\text{e}23\\). That is a similar budget. Gopher saw about 1.07 tokens per parameter, while Chinchilla saw 20. Chinchilla was the better model on the benchmarks (standard comparison tests) that DeepMind reported. You can also run it backwards. Setting \\(D = 20N\\) gives \\(C = 120N^2\\). So \\(N^2 = 5.88\\text{e}23 / 120 = 4.9\\text{e}21\\), and \\(N = 7\\text{e}10\\), which is 70 billion.",
+      "Earlier guidance differed. Kaplan et al. (2020) found \\(a \\approx 0.73\\) and \\(b \\approx 0.27\\). With 100 times more compute, that means growing the model about 29 times and the data about 3.5 times. GPT-3, OpenAI's 175-billion-parameter model trained on about 300 billion tokens, followed this philosophy. Hoffmann et al. (2022) found \\(a \\approx b \\approx 0.5\\), so 100 times more compute means growing both about 10 times. Kaplan was not simply wrong. Later analyses point to his smaller models, a learning-rate schedule (the plan for how fast weights change over a run) not matched to each run length, and his way of counting parameters.",
+      "The limits matter. Twenty tokens per parameter is a fitted rule of thumb, not a law of nature. It optimizes only training cost and ignores inference, which means running the finished model to answer queries. Because inference can cost far more than training, almost nobody trains at this ratio now. Llama 3 8B, Meta's open-weight model (weights published for anyone to download), saw roughly 15 trillion tokens, about 1,900 per parameter. A smaller model trained far past the optimum is cheaper to serve.",
+      "Mixture of experts (MoE) layers send each token to a few of many smaller sub-networks. This shifts the question to active parameters, the ones used for a single token. DeepSeek-V3, an open-weight MoE language model, has 671 billion total parameters and 37 billion active. Lower loss also does not guarantee better performance on every task, though the two correlate strongly. Two open pressures remain. High-quality text is limited, and reasoning models, which work through a problem step by step before answering, add a new axis: compute spent at answer time."
+     ]
+    }
+   ]
+  },
+  "throwback": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "Why One Hidden Layer Can Draw Any Curve: The 1989 Proof That Neural Networks Are Flexible Enough",
+     "dek": "In 1989, two papers showed that a neural network with a single hidden layer can approximate any continuous function as closely as you like, which settled whether the architecture was expressive enough.",
+     "body": [
+      "By the late 1980s, researchers could train multilayer networks with backpropagation, the method that computes how the error changes with each weight by applying the chain rule backward through the layers. Recall that a weight is an adjustable number that scales one signal in the network, and the chain rule is the calculus rule for the rate of change of a function built from other functions. A worry remained. Single-layer perceptrons, the simplest networks, which draw one straight dividing line through the inputs, famously cannot learn some simple patterns, such as exclusive-or. Did hidden layers fix this completely, or did every fixed architecture hide a ceiling on what it could represent? Cybenko (1989) and Hornik, Stinchcombe and White (1989) answered independently: with enough hidden units, there is no such ceiling for continuous functions.",
+      "Start with a picture. Think of a histogram: a row of flat bars whose tops trace a curve. Narrow the bars and the outline hugs the curve more tightly. A neural network can build those bars. One steep switch turns on at some position. Subtract a second switch placed slightly further along, and you get a flat plateau between the two positions. Add many plateaus of different heights and you have a histogram, so you can approximate a curve.",
+      "Now the vocabulary. A feedforward network passes data in one direction, from input to output, with no loops. A hidden unit is one intermediate neuron that computes a weighted sum of its inputs and then applies a nonlinear function. A sigmoidal function is a smooth S-shaped curve that approaches 0 far to the left and 1 far to the right. A function is continuous if small input changes cause only small output changes. Finally, two functions are close in the uniform sense if the largest gap between them, over the whole input region, is small.",
+      "Here is the mechanism. The standard sigmoid is \\\\[ \\\\sigma(t) = \\\\frac{1}{1+e^{-t}} \\\\] which squeezes any real number into the range between 0 and 1, acting as a soft on/off switch. Here \\\\(t\\\\) is the real-number input to the switch, and \\\\(e\\\\) is the base of the natural logarithm, about 2.718. A one-hidden-layer network with \\\\(N\\\\) hidden units then computes \\\\[ G(x) = \\\\sum_{j=1}^{N} \\\\alpha_j \\\\, \\\\sigma(w_j^\\\\top x + b_j) \\\\] which adds up \\\\(N\\\\) weighted switches placed at different positions and orientations in input space. Here \\\\(G(x)\\\\) is the network's output, a single number. \\\\(x\\\\) is the input vector of length \\\\(n\\\\), \\\\(w_j\\\\) is the length-\\\\(n\\\\) weight vector of unit \\\\(j\\\\), \\\\(w_j^\\\\top x\\\\) is the weighted sum of the inputs (the dot product), \\\\(b_j\\\\) is its scalar bias that shifts where the switch turns on, and \\\\(\\\\alpha_j\\\\) is its scalar output weight. The theorem says: for any continuous \\\\(f\\\\) on the unit cube \\\\([0,1]^n\\\\) and any tolerance \\\\(\\\\varepsilon>0\\\\), some choice of \\\\(N\\\\), \\\\(\\\\alpha_j\\\\), \\\\(w_j\\\\), \\\\(b_j\\\\) gives \\\\[ \\\\sup_{x\\\\in[0,1]^n} |G(x)-f(x)| < \\\\varepsilon \\\\] which says the worst-case gap between network and target is smaller than \\\\(\\\\varepsilon\\\\). Here \\\\(f\\\\) is the target function we want to imitate, \\\\(\\\\varepsilon\\\\) is the small positive error we are willing to accept, and \\\\(\\\\sup\\\\) means the largest value of the gap over all inputs \\\\(x\\\\) in the cube. Cybenko (1989) phrased this as: sums of this form are dense, meaning they get arbitrarily close to every continuous function. Hornik, Stinchcombe and White (1989) extended it to a broad class of squashing functions, meaning bounded, non-decreasing S-shaped activations.",
+      "Try a tiny case with one input. Let the steepness be \\\\(k=50\\\\) and use switches \\\\(\\\\sigma(50(x-0.2))\\\\) and \\\\(\\\\sigma(50(x-0.6))\\\\). Set \\\\(\\\\alpha_1=3\\\\) and \\\\(\\\\alpha_2=-3\\\\). At \\\\(x=0.4\\\\), the first switch gets \\\\(t=50(0.4-0.2)=10\\\\), so it is about 1. The second gets \\\\(t=50(0.4-0.6)=-10\\\\), so it is about 0. The output is about \\\\(3\\\\cdot 1 - 3\\\\cdot 0 = 3\\\\). At \\\\(x=0.1\\\\), the first switch gets \\\\(t=-5\\\\), so it is about 0.0067, and the second is even closer to 0. The output is about 0.02, which is near 0. At \\\\(x=0.8\\\\), both switches are near 1, so the output is \\\\(3-3=0\\\\). That is a plateau of height 3 between 0.2 and 0.6. Even at \\\\(x=0.3\\\\), just 0.1 past the first edge, the first switch has \\\\(t=5\\\\) and equals about 0.9933, so the edges are sharp already.",
+      "What the theorem does not say matters as much. It guarantees that a good set of weights exists. It does not say gradient descent, the step-by-step method that nudges weights to reduce error, will find them. It does not say that \\\\(N\\\\) will be small, or that the network will generalize to unseen data. Later practice favored depth, stacking many layers, because deeper networks can often represent useful functions more economically than one very wide layer. The one-hidden-layer shape still appears in today's models. A transformer, the network design behind most modern language models, contains in each block a feed-forward sublayer, which is a one-hidden-layer network applied to every token separately. Those sublayers usually use other activation functions than the sigmoid, so the 1989 theorem is a loose precedent for them rather than a direct guarantee."
+     ],
+     "why": "It established that neural networks have no basic expressiveness ceiling, so the real questions became how to train them, how big they must be, and how well they generalize.",
+     "terms": [
+      {
+       "term": "Sigmoidal function",
+       "def": "A smooth S-shaped function that approaches 0 at far left and 1 at far right, acting as a soft on/off switch."
+      },
+      {
+       "term": "Hidden unit",
+       "def": "An intermediate neuron that applies a nonlinear function to a weighted sum of its inputs, neither an input nor an output."
+      },
+      {
+       "term": "Dense (set of functions)",
+       "def": "A family of functions is dense if it contains members that come arbitrarily close to every target function in a larger class."
+      }
+     ],
+     "sources": [
+      {
+       "title": "Cybenko, G. (1989). Approximation by superpositions of a sigmoidal function. Mathematics of Control, Signals and Systems.",
+       "url": ""
+      },
+      {
+       "title": "Hornik, K., Stinchcombe, M., & White, H. (1989). Multilayer feedforward networks are universal approximators. Neural Networks.",
+       "url": ""
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "A network with one hidden layer of sigmoid units can approximate any continuous function on a bounded region as closely as you want.",
+      "The reason is that steep switches combine into plateaus, and plateaus tile into a histogram-like fit of the target curve.",
+      "The theorem guarantees existence only, not learnability, small size, or generalization."
+     ],
+     "deeper": [
+      "Start with some prerequisites. A weight is an adjustable number that scales one signal in the network. Backpropagation computes how the error changes with each weight by applying the chain rule, the calculus rule for the rate of change of a function built from other functions, backward through the layers. By the late 1980s researchers could train multilayer networks this way. A worry remained. A single-layer perceptron draws one straight dividing line through its inputs, so it cannot learn some simple patterns, such as exclusive-or, where the answer is \"true\" when exactly one of two inputs is on. Did hidden layers remove that kind of ceiling, or did every fixed architecture hide one?",
+      "Here is a picture. Think of a histogram, a row of flat bars whose tops trace a curve. Narrower bars hug the curve more tightly. A network can build those bars. One steep switch turns on at some position. A second switch placed slightly further along is subtracted from the first. What remains is a flat plateau between the two positions. Add many plateaus of different heights and you have a histogram, which approximates a curve.",
+      "Now the vocabulary. A feedforward network passes data in one direction, from input to output, with no loops. A hidden unit is one intermediate neuron. It computes a weighted sum of its inputs and then applies a nonlinear function. A sigmoidal function is a smooth S-shaped curve that approaches 0 far to the left and 1 far to the right. A function is continuous if small input changes cause only small output changes.",
+      "The standard sigmoid is",
+      "\\[ \\sigma(t) = \\frac{1}{1+e^{-t}} \\]",
+      "This squeezes any real number into the range between 0 and 1, acting as a soft on/off switch. Here \\(t\\) is the real-number input to the switch, and \\(e\\) is the base of the natural logarithm, about 2.718.",
+      "A one-hidden-layer network with \\(N\\) hidden units computes",
+      "\\[ G(x) = \\sum_{j=1}^{N} \\alpha_j \\, \\sigma(w_j^\\top x + b_j) \\]",
+      "This adds up \\(N\\) weighted switches placed at different positions and orientations in input space. Here \\(G(x)\\) is the network's output, a single number. The vector \\(x\\) is the input, of length \\(n\\). The vector \\(w_j\\) is the length-\\(n\\) weight vector of unit \\(j\\). The product \\(w_j^\\top x\\) is the dot product, the weighted sum of the inputs. The scalar \\(b_j\\) is the bias, which shifts where the switch turns on. The scalar \\(\\alpha_j\\) is the output weight of unit \\(j\\).",
+      "Two functions are close in the uniform sense if the largest gap between them, over the whole input region, is small. The theorem says that for any continuous \\(f\\) on the unit cube \\([0,1]^n\\) and any tolerance \\(\\varepsilon>0\\), some choice of \\(N\\), \\(\\alpha_j\\), \\(w_j\\), \\(b_j\\) gives",
+      "\\[ \\sup_{x\\in[0,1]^n} |G(x)-f(x)| < \\varepsilon \\]",
+      "This says the worst-case gap between network and target is smaller than \\(\\varepsilon\\). Here \\(f\\) is the target function we want to imitate. The symbol \\(\\varepsilon\\) is the small positive error we are willing to accept. The symbol \\(\\sup\\), short for supremum, means the largest value of the gap over all inputs \\(x\\) in the cube. Cybenko (1989) phrased this as density: sums of this form get arbitrarily close to every continuous function. Hornik, Stinchcombe and White (1989) extended the result to a broad class of squashing functions, meaning bounded, non-decreasing S-shaped activations.",
+      "Try one input with steepness 50:",
+      "\\[ G(x) = 3\\,\\sigma(50(x-0.2)) - 3\\,\\sigma(50(x-0.6)) \\]",
+      "This is one plateau built from two switches. Here \\(x\\) is a single number between 0 and 1. The numbers 0.2 and 0.6 are where the switches turn on, 50 is their steepness, and 3 and \\(-3\\) are the output weights.",
+      "At \\(x=0.4\\), the first switch gets \\(t=10\\) and is about 1. The second gets \\(t=-10\\) and is about 0. The output is about \\(3\\cdot 1 - 3\\cdot 0 = 3\\). At \\(x=0.1\\), the first switch gets \\(t=-5\\), so it is about 0.0067. The second is far closer to 0. The output is about 0.02. At \\(x=0.8\\), both switches are near 1, so the output is about \\(3-3=0\\). At \\(x=0.3\\), just 0.1 past the first edge, \\(t=5\\) and the switch is about 0.9933. So the edges are already sharp, and the plateau has height 3 between 0.2 and 0.6.",
+      "Compared with the perceptron, the hidden layer is what changes things. Instead of one dividing line, the network combines many switches. The theorem shows that this combination has no ceiling for continuous functions, given enough units.",
+      "The limits matter as much. The theorem says good weights exist. It does not say that gradient descent, the step-by-step method that nudges weights to reduce error, will find them. It does not say \\(N\\) will be small, or that the network will generalize, meaning perform well on unseen data. Later practice favored depth, stacking many layers, because deeper networks can often represent useful functions more economically than one very wide layer.",
+      "The one-hidden-layer shape still appears today. A transformer, the network design behind most modern language models, has a feed-forward sublayer in each block. It is a one-hidden-layer network applied to each token, a small chunk of text, separately. Those sublayers usually use activation functions other than the sigmoid. So the 1989 theorem is a loose precedent for them, not a direct guarantee."
+     ],
+     "era": "1989"
+    }
+   ]
+  }
+ }
+}
