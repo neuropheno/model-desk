@@ -1,0 +1,582 @@
+{
+ "date": "2026-11-25",
+ "created": "2026-11-25T15:00:21.114552-05:00",
+ "primerIndex": 4,
+ "throwbackIndex": 4,
+ "sections": {
+  "architectures": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "A laptop-sized model gets deeper by running its middle layers three times for every token",
+     "dek": "Thinking Machines Lab's Inkling 2 Mini stores 24 layers of weights but applies 48 layers of computation per token, trading extra compute for extra reasoning depth instead of extra parameters.",
+     "body": [
+      "On November 20, 2026, Thinking Machines Lab released Inkling 2 Mini, an open-weights model. <cite index=\"41-6\">It has 26.4 billion total parameters and a memory footprint of about 20GB.</cite> <cite index=\"38-4\">It is a looped transformer: it runs the middle layers of the model three times for every token.</cite> <cite index=\"38-3\">The lab says it is small enough to run on a laptop.</cite>",
+      "Recall that a transformer is a stack of layers, and a token normally passes through each layer once. Recall also that a mixture of experts (MoE) is a layer that sends each token to a few of many smaller networks. That keeps the active parameters, the weights actually used for one token, far below the total. Inkling 2 Mini is an MoE. <cite index=\"41-10\">It has 3.4 billion active parameters, and 5.4 billion weight activations per token once looping is counted.</cite>",
+      "Think of a writer who rereads and revises the same middle chapters three times before moving on, instead of hiring two more writers. The weights stay the same, but the draft improves with each pass. Mechanically, <cite index=\"38-9\">the 24 layers are divided into four blocks of six layers each.</cite> <cite index=\"41-9\">The first and last blocks run once, while the two middle blocks share weights and run three times.</cite> <cite index=\"41-11\">The second and third passes also receive a gated message from the preceding pass.</cite> A gate is a learned multiplier between 0 and 1 that decides how much of that message gets through. The layer count works out as follows.",
+      "\\[ L_{\\text{eff}} = L_{\\text{pre}} + R\\,L_{\\text{mid}} + L_{\\text{post}} = 6 + 3\\cdot 12 + 6 = 48 \\]",
+      "This counts how many layer computations one token goes through. \\(L_{\\text{pre}}\\) is the number of layers in the first block (6), and \\(L_{\\text{post}}\\) is the number in the last block (6). \\(L_{\\text{mid}}\\) is the number of layers in the looped middle section (12). \\(R\\) is how many times that section runs (3). The result, \\(L_{\\text{eff}}\\), is 48 layer applications from 24 stored layers.",
+      "On training, <cite index=\"38-11\">the model started with 8 experts chosen out of 384.</cite> <cite index=\"41-12\">Two-thirds of the experts were pruned during midtraining, leaving the 128 most-used experts in each layer. The model then trained on 1 trillion tokens distilled from a larger internal Inkling model to recover its earlier performance.</cite> <cite index=\"38-7\">Most weights were trained and are deployed natively in a 4-bit number format called NVFP4.</cite>",
+      "The caveats matter. <cite index=\"41-3\">Looping improves reasoning without letting weights store more facts, since knowledge tracks total parameter count.</cite> <cite index=\"41-4\">Internal looping also lets models reason without written traces, which undermines chain-of-thought monitoring.</cite> Chain-of-thought monitoring means reading a model's written reasoning to check its behavior. I could not confirm specific benchmark scores from the primary announcement, so treat the comparisons to larger models as the lab's own claims until independent evaluations arrive."
+     ],
+     "why": "It is one of the first open-weight looped mixture-of-experts models, so researchers can test whether reusing layers is a cheaper way to buy reasoning than adding parameters.",
+     "terms": [
+      {
+       "term": "Mixture of experts (MoE)",
+       "def": "A layer that sends each token to a few of many smaller networks, so only a fraction of the total parameters is used per token."
+      },
+      {
+       "term": "Looped transformer",
+       "def": "A transformer that applies the same group of layers several times to each token, reusing the weights to gain depth."
+      },
+      {
+       "term": "Active parameters",
+       "def": "The weights actually used to process one token; in an MoE this is much smaller than the total parameter count."
+      },
+      {
+       "term": "NVFP4",
+       "def": "A 4-bit floating-point number format from NVIDIA that shrinks memory use and speeds up arithmetic on supported GPUs."
+      },
+      {
+       "term": "Gate",
+       "def": "A learned multiplier, usually between 0 and 1, that controls how much of a signal passes onward."
+      }
+     ],
+     "sources": [
+      {
+       "title": "Introducing Inkling 2 Mini - Thinking Machines Lab",
+       "url": "https://thinkingmachines.ai/news/inkling-2-mini/"
+      },
+      {
+       "title": "Thinking Machines Lab Releases Inkling 2 Mini for Local Devices - Unite.AI",
+       "url": "https://www.unite.ai/thinking-machines-lab-releases-inkling-2-mini-for-local-devices/"
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "Inkling 2 Mini reuses its two middle blocks of six layers three times, so 24 stored layers act like 48 layer applications per token.",
+      "Looping adds reasoning depth without adding weights, but it cannot add stored knowledge, which tracks total parameter count.",
+      "Hidden looped reasoning leaves less written text for safety monitors to inspect, and independent benchmark checks are still pending."
+     ],
+     "deeper": [
+      "Start with the prerequisites. A token is a small chunk of text, such as a word piece, that the model reads one at a time. A transformer is a stack of layers, and each token normally passes through every layer once. A parameter is one learned number, or weight, in the network. A mixture of experts (MoE) is a layer that sends each token to a few of many smaller networks, so the active parameters, the weights used for one token, stay far below the total. Inkling 2 Mini, released on November 20, 2026 by Thinking Machines Lab, is an MoE. Its weights are open, meaning anyone can download them. It has 26.4 billion total parameters, 3.4 billion active ones, and a memory footprint of about 20GB, which the lab says is small enough for a laptop.",
+      "Now the intuition. Think of a writer who rereads and revises the middle chapters three times before moving on, instead of hiring two more writers. The words on the page change with each pass, but the writer's skill, meaning the stored weights, does not grow. The model is a looped transformer built on the same idea.",
+      "The mechanism has four steps. The 24 stored layers are split into four blocks of six. The first block runs once. The two middle blocks share weights and run three times in a row. The last block runs once. On the second and third passes, the middle section also receives a gated message from the pass before it. A gate is a learned multiplier between 0 and 1 that sets how much of that message gets through. So each pass can build on the last one without being forced to copy it.",
+      "The depth arithmetic is short.",
+      "\\[ L_{\\text{eff}} = L_{\\text{pre}} + R\\,L_{\\text{mid}} + L_{\\text{post}} = 6 + 3\\cdot 12 + 6 = 48 \\]",
+      "This counts how many layer computations one token goes through. \\(L_{\\text{pre}}\\) is the number of layers in the first block (6), and \\(L_{\\text{post}}\\) is the number in the last block (6). \\(L_{\\text{mid}}\\) is the number of layers in the looped middle section (12). \\(R\\) is how many times that section runs (3). The result, \\(L_{\\text{eff}}\\), is 48 layer applications from 24 stored layers.",
+      "A second small calculation checks the parameter counts. Active parameters per token are 3.4 billion, and the lab reports 5.4 billion weight activations once looping is counted. The difference is 5.4 − 3.4 = 2.0 billion. That is two extra passes, so the looped middle would hold about 1.0 billion active weights per pass. This is my inference from the reported figures, not a number the lab states. It also shows why looping is cheap in memory: only the repeated part costs extra compute, and none of it costs extra storage. As a rough check on the footprint, 26.4 billion weights at 4 bits (half a byte) each come to 13.2GB. The reported 20GB is higher, which suggests some components are kept at higher precision, though that is also my inference.",
+      "Training had three stages. The model started with 8 experts chosen out of 384. Pruning, which means removing parts of a network, cut two-thirds of the experts during midtraining, leaving the 128 most-used experts in each layer. The model then trained on 1 trillion tokens distilled from a larger internal Inkling model. Distillation means training a smaller model to imitate a larger one's outputs, and here it was used to recover the performance lost to pruning. Most weights were trained and deployed natively in NVFP4, a 4-bit number format.",
+      "Compared with earlier approaches, looping trades compute for memory. A standard 48-layer model would store 48 distinct layers. Adding more experts would raise the total parameter count and the memory it needs. Chain-of-thought prompting, where a model writes out intermediate reasoning, spends extra tokens to think more. Looping spends extra depth instead, and the thinking stays inside the network.",
+      "The caveats matter. Looping improves reasoning without letting the weights store more facts, since knowledge tracks total parameter count. Internal looping also lets models reason without written traces, which undermines chain-of-thought monitoring, the practice of reading a model's written reasoning to check its behavior. Finally, I could not confirm specific benchmark scores, meaning results on standard test sets, from the primary announcement. Treat comparisons to larger models as the lab's own claims until independent evaluations arrive."
+     ]
+    }
+   ]
+  },
+  "training": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "OpenAI shows its model-quality ruler: one fixed test, one number, and a call for rivals to use it",
+     "dek": "OpenAI's chief scientist published how much better each of its base models has gotten at predicting held-out text, and asked other labs to report the same measurement.",
+     "body": [
+      "<cite index=\"43-1\">On November 22, 2026, OpenAI chief scientist Jakub Pachocki posted an essay, 'Perplexity and Intelligence'. It released the internal perplexity measurements OpenAI has tracked since GPT-3.5.</cite> <cite index=\"43-6\">The scores are about 0.99 for GPT-3.5, about 0.91 for GPT-4, and below 0.8 for its 2026 models. About 0.76 is the model that began producing major math results.</cite> <cite index=\"43-3\">Microsoft then reported its MAI-2 Base model, Microsoft's own pretrained model, at a log-perplexity of 0.819 on OpenAI's held-out set. OpenAI gave permission for that run.</cite>",
+      "Here is the reminder. Pretraining teaches a language model to predict the next token, a small chunk of text, across huge amounts of text. A held-out set is text kept out of training, so the score reflects prediction rather than memory. Picture a guessing game. At each step the model spreads its bets over possible next tokens, and the loss is how badly those bets missed. Over N tokens, the loss is the average of minus the log of the probability the model gave to the true token:",
+      "\\[ L = -\\frac{1}{N}\\sum_{t=1}^{N} \\log p_\\theta(x_t \\mid x_{<t}), \\qquad \\mathrm{PPL} = e^{L} \\]",
+      "This measures the average surprise per token, and perplexity turns that surprise into an effective number of equally likely choices. Here \\(L\\) is the loss, a single number, also called cross-entropy or log-perplexity. \\(N\\) is the count of held-out tokens. \\(x_t\\) is the true token at position \\(t\\). \\(x_{<t}\\) is every token before it. \\(p_\\theta\\) is the model's predicted probability, with parameters \\(\\theta\\). \\(\\mathrm{PPL}\\) is perplexity. A small example: suppose the true tokens got probabilities 0.5, 0.25 and 0.125. Their natural logs are about −0.693, −1.386 and −2.079. The mean of the negatives is about 1.386, and \\(e^{1.386} \\approx 4\\). The model behaved as if choosing among four options each time.",
+      "The new part is how the number is used. <cite index=\"44-3\">Pachocki measured on a fixed snapshot of OpenAI's internal codebase. He proposed perplexity as a cross-lab metric and, together with other measurements, a basis for common limits on AI development.</cite> The private snapshot matters. <cite index=\"44-11\">A shared evaluation set stops being held out once it lands in anyone's training data.</cite>",
+      "The caveats are large. These numbers come from one lab's private code, so they only compare across labs when someone runs the same set, as Microsoft did. <cite index=\"44-10\">The held-out set is itself a gap for cross-lab comparison.</cite> Loss also ignores gains made after pretraining, such as reinforcement learning, and it says nothing directly about any single skill. The claim that particular loss thresholds mark new capabilities rests on OpenAI's own history and has not been independently tested."
+     ],
+     "why": "If labs adopt a shared pretraining ruler, loss on held-out text becomes a public yardstick for progress and for pacing agreements, but only if the evaluation set stays truly unseen.",
+     "terms": [
+      {
+       "term": "Perplexity",
+       "def": "The exponential of the loss: the effective number of equally likely next tokens the model is choosing between."
+      },
+      {
+       "term": "Log-perplexity (cross-entropy)",
+       "def": "The average of minus the log-probability the model gave to each true next token. Lower is better."
+      },
+      {
+       "term": "Held-out set",
+       "def": "Text kept out of training and used only to measure how well the model predicts unseen data."
+      },
+      {
+       "term": "Base model",
+       "def": "A model after pretraining on next-token prediction, before instruction tuning or reinforcement learning."
+      },
+      {
+       "term": "Token",
+       "def": "A small chunk of text, such as a word piece, that the model reads and predicts one at a time."
+      }
+     ],
+     "sources": [
+      {
+       "title": "OpenAI Pretraining Loss Curve: How to Read the 7x Drop",
+       "url": "https://agentspulse.github.io/tutorials/openai-pretraining-loss-curve/"
+      },
+      {
+       "title": "OpenAI's perplexity chart: a pretraining loss measured on OpenAI's own code, and what it cannot tell you",
+       "url": "https://max.nardit.com/articles/openai-perplexity-pretraining-metric"
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "OpenAI published the log-perplexity of its base models on one fixed, private, held-out code set, from about 0.99 for GPT-3.5 to about 0.76 for the model that started solving open math problems.",
+      "Log-perplexity is average per-token surprise, and its exponential is the effective number of equally likely next-token choices, so a lower number means better prediction.",
+      "The numbers only compare across labs if everyone scores on the same hidden set, and the link between loss levels and new abilities remains unproven."
+     ],
+     "deeper": [
+      "On November 22, 2026, OpenAI's chief scientist, Jakub Pachocki, published an essay called \"Perplexity and Intelligence\". It releases a number OpenAI has tracked since GPT-3.5, an early OpenAI language model. First, the prerequisites. A language model reads text as tokens, which are small chunks of text such as words or word pieces. Pretraining teaches the model to predict the next token across huge amounts of text. A held-out set is text kept out of training, so the score reflects prediction rather than memory.",
+      "Picture a guessing game. At each position, the model spreads its bets over every possible next token, like a gambler splitting chips across outcomes. Then the true token is revealed. If the model put many chips on it, it was barely surprised. If it put few, it was very surprised. The score is the average surprise over the whole test text.",
+      "To turn surprise into a number, use the logarithm, which here means the natural logarithm. It is zero when the probability is 1 and grows large as the probability approaches 0. Over \\(N\\) tokens, the loss is:",
+      "\\[ L = -\\frac{1}{N}\\sum_{t=1}^{N} \\log p_\\theta(x_t \\mid x_{<t}), \\qquad \\mathrm{PPL} = e^{L} \\]",
+      "The loss averages the surprise per token, and perplexity converts that average into an effective number of equally likely choices. Here \\(L\\) is the loss, a single number, also called cross-entropy or log-perplexity. \\(N\\) is the count of held-out tokens. The index \\(t\\) runs from 1 to \\(N\\) and marks the position in the text. \\(x_t\\) is the true token at position \\(t\\). \\(x_{<t}\\) is every token before it. \\(p_\\theta\\) is the model's predicted probability, a number between 0 and 1, with parameters \\(\\theta\\), the learned weights. \\(\\mathrm{PPL}\\) is perplexity, and \\(e\\) is the base of the natural logarithm, about 2.718.",
+      "Here is a small example. Suppose the true tokens got probabilities 0.5, 0.25 and 0.125. Their natural logs are about −0.693, −1.386 and −2.079. The negatives sum to about 4.158, so the mean is about 1.386. Then \\(e^{1.386} \\approx 4\\). The model behaved as if choosing among four options each time. As a check, 2, 4 and 8 are the inverse probabilities, and their geometric mean is 4.",
+      "Now the scores. OpenAI reports about 0.99 for GPT-3.5, about 0.91 for GPT-4, and below 0.8 for its 2026 models. About 0.76 marks the model that began producing major math results. If these are natural-log values, 0.99 is about 2.7 effective choices per token and 0.76 is about 2.1. Microsoft then reported 0.819 for MAI-2 Base, its own pretrained model, on OpenAI's held-out set, which is about 2.27 effective choices. OpenAI gave permission for that run.",
+      "The new part is how the number is used. Pachocki measured on a fixed snapshot of OpenAI's internal codebase. He proposed perplexity as a metric labs could share. He also suggested it, together with other measurements, could form a basis for common limits on AI development. Earlier comparisons mostly used public benchmarks, which are fixed question sets built to test specific skills. Those leak into training data over time. A private snapshot resists this, because a shared evaluation set stops being held out once it lands in anyone's training data. Loss also has a practical advantage over skill tests. It is smooth and cheap to compute, so small improvements show up long before a benchmark's pass rate moves.",
+      "The caveats are large. These numbers come from one lab's private code, so they compare across labs only when someone runs the same set, as Microsoft did. That dependence on one private set is itself a gap for cross-lab comparison. Loss also ignores gains made after pretraining, such as reinforcement learning, which tunes a model using reward signals. It says nothing directly about any single skill. Finally, the claim that particular loss thresholds mark new capabilities rests on OpenAI's own history. No one outside has tested it independently. Until others report on the same set, the ruler is useful but not yet shared."
+     ]
+    }
+   ]
+  },
+  "theory": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "Why a panel of language models can hide what none of them knows",
+     "dek": "A new paper argues that disagreement among a group of models shows only part of what they are all unsure about, and that the visible part grows as models get bigger.",
+     "body": [
+      "On November 24, 2026, Siamak Ravanbakhsh, David Nitchi and Khang Ngo of McGill University and Mila posted a paper on how uncertainty scales in large language models (LLMs), meaning neural networks trained to predict the next token of text. <cite index=\"31-2,31-3\">They argue that Bayesian deep learning methods, which usually stay inside one fixed model family, miss part of the uncertainty at practical LLM scale. The reason is that error from the family's limited capacity is invisible to disagreement among its members.</cite>",
+      "Recall that epistemic uncertainty is uncertainty from not knowing enough, as opposed to noise in the data. A deep ensemble trains several models and reads their disagreement as a sign of that uncertainty. Picture five students who studied the same flawed textbook. If they all give the same wrong answer, their agreement looks like confidence. Recall also that a power law is a curve where the error falls as a fixed power of size, which is a straight line on log-log axes. <cite index=\"31-4\">The authors tie the hidden error to the well-known power-law scaling of LLM loss with model size.</cite>",
+      "The mechanism splits a model's excess loss into two parts. Irreducible loss, written E, is the entropy floor that no model can beat. Everything above that floor is epistemic. The visible part is the share that member disagreement can reveal. <cite index=\"33-3\">The paper measures this share as f = ρ / (L̄ − E), a number between 0 and 1.</cite> Here L̄ is the average loss of the individual members, in nats per token. E is the irreducible loss, in the same units. ρ is the part of the excess loss that the ensemble's disagreement accounts for. The ratio says how much of what the members don't know the ensemble can see. As a made-up example, suppose L̄ is 2.0 and E is 1.5, so the excess is 0.5. If disagreement accounts for 0.1, then f is 0.1 / 0.5 = 0.2, and 80 percent of the uncertainty stays hidden.",
+      "The authors fit two new laws alongside the standard capacity law. <cite index=\"32-2\">They report a shallow power law for ensemble spread across many open-weight models and their own family of character-level models.</cite> A second law covers ensembling through late branching. <cite index=\"33-5\">At larger scales the ensemble covers a larger fraction of the total epistemic uncertainty, so ensembling becomes more effective for estimating it.</cite> <cite index=\"30-10\">For any two fixed ensemble sizes, the laws predict a scale beyond which spending the same budget on more members gives lower loss, provided the laws stay valid at that scale.</cite>",
+      "The caveats matter. The conclusion rests on extrapolating fitted laws beyond the scales tested. <cite index=\"32-5\">The irreducible-loss floor is an estimate, and it affects only the capacity law, not the two new laws.</cite> It is a preprint, and I have not seen independent replication. It also doesn't yet show that ensembles beat one bigger model on downstream tasks."
+     ],
+     "why": "If the paper's fits hold, spreading compute across several diverse models becomes a better way to measure and use uncertainty as language models grow.",
+     "terms": [
+      {
+       "term": "Large language model (LLM)",
+       "def": "A neural network trained to predict the next token of text, at a scale of billions of parameters."
+      },
+      {
+       "term": "Epistemic uncertainty",
+       "def": "Uncertainty that comes from the model not knowing enough, and that more data or capacity could in principle reduce."
+      },
+      {
+       "term": "Deep ensemble",
+       "def": "A group of separately trained networks whose predictions and disagreement are combined."
+      },
+      {
+       "term": "Irreducible loss",
+       "def": "The lowest loss any model could reach, set by the randomness in the data itself."
+      },
+      {
+       "term": "Power law",
+       "def": "A relationship where error falls as a fixed power of size, appearing as a straight line on a log-log plot."
+      }
+     ],
+     "sources": [
+      {
+       "title": "Scaling Laws of Ensemble Uncertainty in Language Models (arXiv abstract)",
+       "url": "https://arxiv.org/abs/2611.32801"
+      },
+      {
+       "title": "Scaling Laws of Ensemble Uncertainty in Language Models (full text)",
+       "url": "https://bytez.com/docs/arxiv/2611.32801/paper"
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "Disagreement among models in an ensemble shows only the visible slice of what they collectively don't know.",
+      "The paper reports that this visible share grows as models get larger, even while the spread itself shrinks.",
+      "The claim that more members eventually beat a bigger model depends on fitted laws holding beyond the scales tested."
+     ],
+     "deeper": [
+      "Start with the vocabulary. A large language model (LLM) is a neural network trained to predict the next token, a small chunk of text. Loss is the average penalty for wrong predictions, measured here in nats per token. A nat is the unit of information when you use natural logarithms. Epistemic uncertainty is uncertainty from not knowing enough, as opposed to noise in the data. A deep ensemble trains several models and reads their disagreement as a sign of that uncertainty. A power law is a curve where error falls as a fixed power of size, which appears as a straight line on log-log axes.",
+      "Now the intuition. Picture five students who studied the same flawed textbook. If they all give the same wrong answer, their agreement looks like confidence. Ensemble members from one model family share the same capacity limit, meaning the most that family can represent at a given size. Their shared shortfall never shows up as disagreement. On November 24, 2026, Siamak Ravanbakhsh, David Nitchi and Khang Ngo of McGill University and Mila posted a preprint, a paper not yet peer reviewed, arguing this point. Bayesian deep learning methods usually treat uncertainty about a model's parameters as a probability distribution, but they stay inside one fixed family. At practical LLM scale they therefore miss part of the uncertainty.",
+      "The mechanism has three steps. First, split a model's loss into two parts. Irreducible loss, written \\(E\\), is the entropy floor, the randomness in text that no model can beat. Everything above that floor is epistemic. Second, note that this excess shrinks with model size roughly as a power law. The authors tie the hidden error to that well-known scaling. Third, ask how much of the excess the members' disagreement can reveal.",
+      "The paper measures that share as",
+      "\\[\nf = \\frac{\\rho}{\\bar{L} - E}.\n\\]",
+      "This ratio tells you what fraction of the members' collective ignorance the ensemble can see. Here \\(\\bar{L}\\) is the average loss of the individual members, in nats per token. \\(E\\) is the irreducible loss, in the same units. \\(\\rho\\) is the part of the excess loss that disagreement accounts for, also in nats per token. \\(f\\) is a unitless number between 0 and 1.",
+      "The standard capacity law has a common generic form,",
+      "\\[\n\\bar{L}(N) = E + A\\,N^{-\\alpha}.\n\\]",
+      "It says loss sits on the floor plus a term that shrinks as the model grows. \\(N\\) is the parameter count, a scalar. \\(A\\) is a fitted constant. \\(\\alpha\\) is a fitted positive exponent that sets how fast the excess falls.",
+      "Here is a made-up example. Let \\(\\bar{L} = 2.0\\) and \\(E = 1.5\\), so the excess is \\(2.0 - 1.5 = 0.5\\). If disagreement accounts for \\(\\rho = 0.1\\), then \\(f = 0.1/0.5 = 0.2\\). The ensemble sees 20 percent of the uncertainty, and the other \\(0.5 - 0.1 = 0.4\\) nats per token, or 80 percent, stays hidden.",
+      "The authors fit two new laws alongside the capacity law. One is a shallow power law for ensemble spread. It holds across many open-weight models, whose trained parameters are publicly released, and across the authors' own family of character-level models. The second law covers ensembling through late branching. As I read it, members share most of a network and split only near the end, which costs less than training separate models. At larger scales the ensemble covers a larger fraction of the total epistemic uncertainty, so \\(f\\) rises and ensembling becomes more effective for estimating it. For any two fixed ensemble sizes, the laws predict a scale beyond which spending the same budget on more members gives lower loss. This holds only if the laws stay valid at that scale.",
+      "Compared with earlier work, the novelty is the accounting. Bayesian methods and ordinary ensembles measure spread within a family. This paper asks how much error lies outside what spread can detect, and shows that the answer changes with scale.",
+      "The caveats matter. The conclusion rests on extrapolating fitted laws beyond the scales tested. The irreducible-loss floor \\(E\\) is an estimate. It affects only the capacity law, not the two new laws. I have not seen independent replication. The paper also doesn't yet show that ensembles beat one bigger model on downstream tasks, the real-world benchmarks that people ultimately care about."
+     ]
+    }
+   ]
+  },
+  "practice": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "A model server learns to recommend: 256 candidate searches share one copy of the user's history",
+     "dek": "The vLLM team released an open-source layer for serving recommendation models that write out item identifiers. It stores the user's history once and lets every candidate search reuse it.",
+     "body": [
+      "On November 24, the vLLM team released vLLM-GR. vLLM is a popular open-source server for language models, and <cite index=\"29-1\">vLLM-GR is an open-source inference and serving framework built on it for generative recommendation models</cite>. Generative recommendation means a language-model-style network reads a user's history and writes out the identifiers of items they might want, instead of scoring items one at a time. The release <cite index=\"9-9\">runs on NVIDIA GPUs and Huawei Ascend neural processing units (NPUs)</cite>, which are chips built for neural-network math.",
+      "Two older ideas matter here. Recall that a key-value (KV) cache stores the attention keys and values of earlier tokens, so the model does not recompute them for every new token. Recall also that beam search keeps the several highest-scoring partial answers at each step instead of committing to one. Recommendation needs many answers, so the beam is wide. Every beam starts from the same long user history.",
+      "The picture is a library with 256 readers who all start from the same 1,024-page briefing. Copying the briefing 256 times wastes shelf space. vLLM-GR keeps one copy. <cite index=\"29-5\">It adds a beam session that spans the whole search and tracks how candidate paths branch.</cite> <cite index=\"9-5\">Beams share the prompt's KV cache, while each path keeps its own suffix state.</cite> A small numeric example: suppose each item is named by 3 tokens. Copying the cache would store 256 × (1,024 + 3) = 262,912 token entries. Sharing stores 1,024 + 256 × 3 = 1,792, about 147 times fewer. The work also reuses <cite index=\"32-11\">vLLM's scheduler, model execution and paged KV cache</cite>. The framework adds a dedicated attention kernel, called BeamAttn, for this layout. <cite index=\"9-4\">Catalog constraints keep the search to item IDs that actually exist.</cite> Each step scores every extension of a beam:\\n\\n\\\\[ S_t^{(k)}(v) = S_{t-1}^{(k)} + \\\\log P\\\\big(v \\\\mid y^{<t,(k)}, x\\\\big) \\\\]\\n\\nThis adds the log-probability of the next token to the beam's running score, so the top-scoring paths survive. Here \\\\(S_t^{(k)}(v)\\\\) is the new score (a scalar) of beam \\\\(k\\\\) extended by token \\\\(v\\\\). \\\\(S_{t-1}^{(k)}\\\\) is that beam's score before the step. \\\\(y^{<t,(k)}\\\\) is the tokens beam \\\\(k\\\\) has written so far. \\\\(x\\\\) is the user's history. \\\\(P\\\\) is the model's probability of \\\\(v\\\\) given those. Catalog constraints exclude any \\\\(v\\\\) that cannot lead to a real item.",
+      "The team measured P99 latency, the time that 99 percent of requests beat, so it tracks the slow tail. <cite index=\"32-9\">At beam width 256 and 1,024 input tokens, vLLM-GR had the lowest P99 among the backends shown at batch sizes 4 and 8 on all six accelerators.</cite> The comparisons are against SGLang's beam mode and NVIDIA's SID-GR. In one panel, <cite index=\"29-10\">vLLM-GR measured 274.5 ms against 451.5 ms for SID-GR at beam width 256</cite>.",
+      "The caveats are real. A reviewer on the announcement's pull request noted that <cite index=\"33-7\">on Ascend, vLLM-GR and xLLM use a catalog constraint table but SGLang apparently does not, so the systems are not running the same workload</cite>. The reviewer also said that <cite index=\"33-9\">some cases are tied or slightly behind, such as batch size 1 on an RTX PRO 6000</cite>. The numbers are vendor-run latency figures. Recommendation quality and real traffic cost remain unmeasured here."
+     ],
+     "why": "Recommendation is moving onto the same serving stacks as language models, and sharing cache across branching paths is a pattern that will also help other multi-candidate decoding such as agent planning.",
+     "terms": [
+      {
+       "term": "Key-value (KV) cache",
+       "def": "Stored attention keys and values from earlier tokens, so the model does not recompute them for each new token."
+      },
+      {
+       "term": "Beam search",
+       "def": "A decoding method that keeps the several best partial outputs at each step instead of just one."
+      },
+      {
+       "term": "P99 latency",
+       "def": "The response time that 99 percent of requests beat; it measures the slow tail."
+      },
+      {
+       "term": "Neural processing unit (NPU)",
+       "def": "A chip designed for neural-network math, such as Huawei's Ascend."
+      },
+      {
+       "term": "Generative recommendation",
+       "def": "Recommending items by having a sequence model write out item identifiers, rather than scoring each item separately."
+      }
+     ],
+     "sources": [
+      {
+       "title": "Announcing vLLM-GR: Efficient Inference for Generative Recommendation (vLLM blog)",
+       "url": "https://vllm.ai/blog/2026-11-24-vllm-gr-announcement"
+      },
+      {
+       "title": "vLLM-GR announcement pull request #429 (review comments)",
+       "url": "https://github.com/vllm-project/vllm-project.github.io/pull/429"
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "Wide beam search over a user's history is mostly redundant, because every candidate path starts from the same prompt.",
+      "vLLM-GR stores that prompt's key-value cache once and gives each path only a small private suffix.",
+      "The speedups are self-reported tail-latency figures, and the reviewer's notes show that the baselines do not all run the same workload."
+     ],
+     "deeper": [
+      "Generative recommendation means a language-model-style network reads a user's history and writes out the identifiers of items they might want, instead of scoring items one at a time. On November 24, the vLLM team released vLLM-GR, an open-source serving framework for this task. It is built on vLLM, a popular open-source server for language models. It runs on NVIDIA graphics processing units (GPUs) and Huawei Ascend neural processing units (NPUs). Both are chips built for neural-network math.",
+      "Two older ideas matter here. A token is the small text or identifier piece a model reads and writes one at a time. A key-value (KV) cache stores the attention keys and values of earlier tokens, so the model does not recompute them for every new token. Beam search keeps the several highest-scoring partial answers at each step instead of committing to one. The number kept is the beam width. Recommendation needs many answers, so the beam is wide.",
+      "Picture a library with 256 readers who all start from the same 1,024-page briefing. Giving each reader a private photocopy wastes shelf space. Every reader only needs their own notebook for what they add afterward.",
+      "That is the mechanism. Every beam starts from the same user history, called the prompt. vLLM-GR keeps one copy of the prompt's cache. It adds a beam session that lasts for the whole search and tracks how candidate paths branch. Beams share the prompt's cache, while each path keeps its own suffix state, meaning the cache entries for tokens it has added itself. The framework reuses vLLM's scheduler, which decides which requests run together, its model execution, and its paged KV cache, which stores the cache in fixed-size blocks. It also adds BeamAttn, a dedicated attention kernel for this shared layout. Attention is the step where a token looks back at earlier tokens, and a kernel is a small program that runs on the accelerator.",
+      "Catalog constraints keep the search to item identifiers that actually exist. At each step, every extension of every beam is scored:",
+      "\\[ S_t^{(k)}(v) = S_{t-1}^{(k)} + \\log P\\big(v \\mid y^{<t,(k)}, x\\big) \\]",
+      "This adds the log-probability of the next token to the beam's running score, so the paths with the highest total survive. A log-probability is the logarithm of a probability, so adding log-probabilities is the same as multiplying probabilities. Here \\(S_t^{(k)}(v)\\) is the new score, a single number, of beam \\(k\\) extended by token \\(v\\). The index \\(k\\) runs from 1 to the beam width, and \\(t\\) is the step. \\(S_{t-1}^{(k)}\\) is that beam's score before the step. \\(y^{<t,(k)}\\) is the sequence of tokens beam \\(k\\) has written before step \\(t\\). \\(x\\) is the user's history, a sequence of 1,024 tokens in the reported test. \\(P\\) is the model's probability of \\(v\\) given those two inputs. Catalog constraints exclude any \\(v\\) that cannot lead to a real item.",
+      "Now the numbers. Suppose each item is named by 3 tokens. Copying the cache for every beam stores 256 × (1,024 + 3) = 262,912 token entries. Sharing stores 1,024 + 256 × 3 = 1,792 entries. That is about 147 times fewer.",
+      "Earlier approaches fit this workload less well. Standard servers handle beam search as a generic feature. The team compared against SGLang's beam mode and NVIDIA's SID-GR, both of which are serving systems. The team measured P99 latency, the time that 99 percent of requests beat, which tracks the slow tail. At beam width 256 and 1,024 input tokens, vLLM-GR had the lowest P99 among the backends shown at batch sizes 4 and 8 on all six accelerators. A batch is the group of requests processed together. In one panel, vLLM-GR measured 274.5 milliseconds against 451.5 for SID-GR at beam width 256. That is roughly 1.6 times faster.",
+      "The caveats are real. A reviewer on the announcement's pull request noted that on Ascend, vLLM-GR and another system, xLLM, use a catalog constraint table, but SGLang apparently does not. The systems are therefore not running the same workload. The reviewer also said some cases are tied or slightly behind, such as batch size 1 on an RTX PRO 6000, an NVIDIA GPU.",
+      "The numbers are vendor-run latency figures. Recommendation quality is not measured here, and neither is cost under real traffic. Sharing memory is only part of the question. Whether the speedup holds with fair baselines and live request patterns is still open."
+     ]
+    }
+   ]
+  },
+  "robotics": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "A Robot Checks Its Own Joints to Catch Fake Arms Planted by Attackers",
+     "dek": "A new defense for robot control models compares what the camera says the arm is doing with what the arm's own joint sensors report, and flags attacks when the two disagree.",
+     "body": [
+      "On November 20, 2026, Jiahao Wang, Ming F. Li and Han Xu posted a defense for vision-language-action (VLA) models, which are robot controllers built on web-trained vision-language models that turn camera images and instructions into motor commands. The target is the transferable adversarial patch. That is a printed or pasted pattern, optimized to fool a network, that works across many tasks and models. The authors observe that, despite their different designs, these attacks share one consequence: <cite index=\"20-4\">they disrupt the VLA model's perception towards the robot itself.</cite>",
+      "Here is the reminder. Proprioception is a robot's sense of its own body, such as joint angles read from encoders. Those readings come from hardware and are not pixels, so a sticker cannot change them. An earlier attack, VLA-Hijack, exploited exactly this gap. It <cite index=\"23-2\">suppresses the real arm's features and establishes the patch as a surrogate 'phantom embodiment'.</cite> The model then follows the patch as if it were its own arm.",
+      "The defense works like a pilot cross-checking a faulty instrument against a trusted one. The authors <cite index=\"20-6\">use proprioceptive states to establish a trusted spatial reference, and compare it with the robot's perceived location inferred from visual features.</cite> If the camera pathway places the arm somewhere the joints say it is not, something is wrong. The paper calls this Visual-Proprio Consistency detection. Its score, D_PV, measures the discrepancy, and the same score can be used to localize the patch and mitigate its effect. Their algorithm's exact form is in the paper. A simple version of the idea, which is my illustration and not their formula, is \\[ s_t = \\lVert \\hat{p}_t - f(q_t) \\rVert_2 \\] This measures how far the visually perceived arm position sits from the position implied by the joint sensors. Here \\(\\hat{p}_t\\) is the arm position inferred from visual features at time t (a 3-vector, in meters), \\(q_t\\) is the vector of joint angles, and \\(f\\) is forward kinematics, which maps joint angles to a gripper position. For example, if vision says (0.50, 0.30, 0.20) and the joints imply (0.20, -0.10, 0.20), the difference is (0.3, 0.4, 0). Its length is 0.5 m, a large gap that would raise an alarm.",
+      "The authors report that the framework <cite index=\"22-4\">can accurately detect various transferable attacks, outperforming existing detection baselines</cite>. They also report improved closed-loop performance, meaning the robot completes tasks better when the defense is active. They describe the method as lightweight and attack-agnostic. I could not confirm specific numbers from the pages I could read.",
+      "The caveats are explicit. The framework <cite index=\"21-8\">primarily targets transferable adversarial patches that disrupt robot-related visual representations and cannot defend against all possible attacks.</cite> An attacker who does not touch the robot's apparent self-location, for example by changing how an object looks, would slip past. An adaptive attacker who knows about the check might also try to keep the consistency score low."
+     ],
+     "why": "As vision-language-action models move into real workplaces, a cheap defense that uses sensors an attacker cannot reach shows how robots can use their own bodies as a check on their cameras.",
+     "terms": [
+      {
+       "term": "Vision-language-action (VLA) model",
+       "def": "A robot controller that adapts a web-trained vision-language model to output motor actions from images and text instructions."
+      },
+      {
+       "term": "Proprioception",
+       "def": "A robot's internal sense of its own body, such as joint angles, read from sensors rather than cameras."
+      },
+      {
+       "term": "Adversarial patch",
+       "def": "A pattern placed in a scene that is optimized to make a neural network misbehave."
+      },
+      {
+       "term": "Transferable attack",
+       "def": "An attack crafted against one model or task that still works on other models or tasks."
+      },
+      {
+       "term": "Forward kinematics",
+       "def": "The geometry that converts a robot's joint angles into the position of its hand or gripper."
+      }
+     ],
+     "sources": [
+      {
+       "title": "Defending Vision-Language-Action Models against Transferable Attacks via Visual-Proprioceptive Consistency (arXiv 2611.28346)",
+       "url": "https://arxiv.org/abs/2611.28346"
+      },
+      {
+       "title": "VLA-Hijack: A Transferable Patch Attack against Vision-Language-Action Models via Visual Proprioception Hijacking",
+       "url": "https://www.alphaxiv.org/abs/2605.28083"
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "Transferable patch attacks on robot controllers tend to corrupt the model's visual sense of where its own arm is.",
+      "Joint sensors cannot be fooled by pixels, so comparing them with the visually perceived arm position exposes the attack.",
+      "The defense covers only patches that disrupt the robot's perception of itself, so other attacks and adaptive attackers remain open problems."
+     ],
+     "deeper": [
+      "Start with the prerequisites. A vision-language-action (VLA) model is a robot controller built on a vision-language model pretrained on web data. It turns camera images and a text instruction into motor commands. An adversarial patch is a printed or pasted pattern, optimized by gradient search to fool a neural network. A transferable patch is one that keeps working across tasks and across different models. Proprioception is the robot's sense of its own body, such as joint angles read from encoders, the sensors on each joint that report its rotation. Those readings come from hardware, not pixels, so a sticker cannot alter them.",
+      "Here is the picture. Imagine a pilot whose visual horizon instrument fails. The pilot checks it against a trusted instrument. If the two disagree, one of them is lying. Jiahao Wang, Ming F. Li and Han Xu apply this to robots. Their observation is that transferable patch attacks, despite different designs, share one consequence: they disrupt the model's perception of the robot itself. An earlier attack, VLA-Hijack, shows the extreme case. It suppresses the real arm's features and makes the patch a surrogate \"phantom embodiment.\" The model then follows the patch as if it were its own arm.",
+      "The mechanism runs in steps. First, the joint encoders give a trusted estimate of where the arm is. Second, the vision pathway produces its own estimate of where the arm is, inferred from visual features, which are the internal numeric descriptions the network builds from the image. Third, the two estimates are compared. If the camera places the arm somewhere the joints say it is not, the system flags an attack. The paper calls this Visual-Proprio Consistency detection, and its discrepancy score is D_PV. The authors say the same score can also localize the patch, meaning find where it sits in the image, and mitigate its effect.",
+      "The paper's exact algorithm is in the paper. Here is a simple version that is my illustration, not their formula:",
+      "\\[ s_t = \\lVert \\hat{p}_t - f(q_t) \\rVert_2 \\]",
+      "This measures how far the visually perceived arm position sits from the position implied by the joint sensors. The scalar \\(s_t\\) is the inconsistency score at time step \\(t\\), in meters. The vector \\(\\hat{p}_t\\) is the arm position inferred from vision, a 3-vector in meters. The vector \\(q_t\\) holds the joint angles, one per joint, in radians. The function \\(f\\) is forward kinematics, which maps joint angles to a gripper position using the arm's known link geometry. The symbol \\(\\lVert \\cdot \\rVert_2\\) is the Euclidean length, defined by",
+      "\\[ \\lVert v \\rVert_2 = \\sqrt{v_1^2 + v_2^2 + v_3^2} \\]",
+      "This is ordinary straight-line distance. Here \\(v\\) is any 3-vector, and \\(v_1, v_2, v_3\\) are its components, in meters.",
+      "A small example makes it concrete. Suppose vision says the gripper is at (0.50, 0.30, 0.20) and the joints imply (0.20, −0.10, 0.20). The difference is (0.3, 0.4, 0). Its length is \\(\\sqrt{0.09 + 0.16 + 0} = \\sqrt{0.25} = 0.5\\) m. That is a large gap, and it would raise an alarm. A healthy system would show a score near zero.",
+      "Compared with earlier detectors, the key difference is the source of the reference signal. A detector that inspects only the image must decide whether a pattern looks malicious, and the attacker optimizes the pattern against exactly that kind of judgment. Here the reference comes from a channel the patch cannot touch. The authors report that the framework accurately detects various transferable attacks and outperforms existing detection baselines. They also report better closed-loop performance, meaning the robot completes tasks better, with the defense running. They call the method lightweight and attack-agnostic, meaning it does not depend on a particular attack's design. I could not confirm specific numbers from the pages I could read.",
+      "The limits are explicit. The framework primarily targets transferable patches that disrupt robot-related visual representations, and it cannot defend against all possible attacks. An attacker who leaves the arm's apparent location alone would slip past. For example, changing how a target object looks would not move the arm's perceived position. An adaptive attacker who knows about the check might also try to keep the score low while still steering behavior. Whether that can be done without weakening the attack is an open question."
+     ]
+    }
+   ]
+  },
+  "discoveries": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "A general-purpose language model draws protein shapes with code, and 35 of 322 small designs stuck to their targets in the lab",
+     "dek": "OpenAI reports that its GPT-6.2 language model designed the shapes of small drug-like proteins by reasoning and writing code, but the result is a preprint that has not been peer reviewed, about one design in nine bound its target, and specialist tools helped.",
+     "body": [
+      "On November 24, 2026, OpenAI posted a research note and a preprint (a paper shared publicly before peer review, which is checking by independent experts) titled ‘GPT-6 as a Universal Foundation Model for Protein Biology: Beyond Specialized Models’. It claims that the GPT-6 models, where GPT stands for Generative Pre-trained Transformer, a family of general-purpose language models, can design new protein structures and sequences without specialized biology models, using only reasoning and general-purpose coding tools. In the first experiment, a pre-release GPT-6.2 was given three-dimensional structures of five target proteins, with the intended attachment site marked. It wrote code to produce the designs. Onava, OpenAI's research partner and an artificial intelligence (AI) drug-discovery startup, then made 322 of the resulting proteins and tested them. Think of a sculptor who shapes the clay with ordinary tools and never calls a protein-specific shaping tool. The model reasons about where a small protein should press against a surface, then writes ordinary code that places atoms to match. A specialist model still had to choose the amino-acid sequences that would fold into those shapes.",
+      "The headline number is 35 of 322 designs showing binding. The hit rate (the share of tested designs that worked) is \\(35/322 \\approx 0.109\\), or 10.9%, which is about one design in nine. In words: divide the number of designs that bound by the number tested. Here 35 is the count of designs that showed evidence of binding, and 322 is the count of designs made and tested. Reports say at least one design showed binding for each of the five targets, but the hits were uneven across targets. A second set of experiments gave the model known minibinder structures with the original sequences withheld and asked it to propose new sequences. Reports of the preprint say 75 of 88 designs bound one target, a protein called MDM2. In a separate test, the model redesigned the loops of antibodies (the parts that grip a target), and reports give about two-thirds, 179 of 272, of the resulting fragments as keeping their binding. Sequence design for a known shape is inverse folding, and here a language model was prompted to do it rather than retrained.",
+      "The limits matter. Reports of the preprint say a specialist sequence-design model called SolubleMPNN supplied the sequences in the first experiment. They say the specialist models ESMFold2 (a protein structure predictor), Boltz-2 (a model of how molecules fit together) and OpenDDE then filtered candidates before synthesis. OpenAI itself says the results do not yet show end-to-end design of new minibinders without specialist help. It also notes that the original RFdiffusion study reported higher hit rates, and that such rates depend on how strictly designs are filtered and how binding is defined. Reports also say OpenAI's best internal model, not GPT-6.2 itself, is much weaker at predicting a full structure from a sequence. It scored a template modeling score (TM-score, a 0 to 1 measure of how closely a predicted fold matches the true one) near 0.38, against roughly 0.93 for ESMFold2. Binding is only a first step. It does not show that a protein is specific, stable or biologically active."
+     ],
+     "why": "If a general-purpose model can steer protein design through prompts, scientists may be able to specify design goals in language instead of stitching together narrow tools.",
+     "terms": [
+      {
+       "term": "Minibinder",
+       "def": "A small designed protein, typically under about a hundred amino acids, built to attach to a chosen target protein."
+      },
+      {
+       "term": "Inverse folding",
+       "def": "Finding an amino-acid sequence that will fold into a given 3D backbone shape, the reverse of structure prediction."
+      },
+      {
+       "term": "Backbone",
+       "def": "The repeating chain of atoms that traces a protein's fold, before side chains are chosen."
+      },
+      {
+       "term": "Template modeling score (TM-score)",
+       "def": "A number from 0 to 1 that measures how closely a predicted protein fold matches the true one; above about 0.5 usually means the same overall fold."
+      },
+      {
+       "term": "Preprint",
+       "def": "A research paper posted publicly before peer review, which is checking by independent experts."
+      },
+      {
+       "term": "Hit rate",
+       "def": "The share of tested designs that showed the wanted result, here binding to the target."
+      }
+     ],
+     "sources": [
+      {
+       "title": "GPT-6 models demonstrate intrinsic protein-design capabilities (OpenAI)",
+       "url": "https://openai.com/index/gpt-6-models-demonstrate-intrinsic-protein-design-capabilities/"
+      },
+      {
+       "title": "OpenAI GPT-6 protein design: 35 of 322 bound in lab tests (Mad Robot)",
+       "url": "https://madrobot.blog/2026/11/25/openai-gpt-6-protein-design-lab-binding/"
+      },
+      {
+       "title": "OpenAI's GPT-6 Produces Lab-Tested Protein Binders (Particle)",
+       "url": "https://particle.news/story/openais-gpt-6-produces-lab-tested-protein-binders"
+      }
+     ],
+     "background": [
+      "Picture a string of beads that folds itself into a knot, where the knot decides what the string can do. A protein works like this. It is a chain of amino acids (the small building blocks of proteins), and the chain folds into a three-dimensional shape that determines its function. Formally, a sequence \\(a \\in \\{1,\\dots,20\\}^L\\) of length \\(L\\) maps to atomic coordinates \\(x \\in \\mathbb{R}^{3N}\\), where \\(N\\) is the number of atoms. In words: the sequence is a list of \\(L\\) numbers, each from 1 to 20 for the 20 amino-acid types, and the shape is a list of \\(3N\\) numbers, three position values for each atom. For example, a chain of \\(L = 60\\) amino acids is a list of 60 numbers. Christian Anfinsen argued in the 1960s and 70s that the sequence alone fixes the structure. Structure prediction runs that map forward. Protein design runs it backward. Inverse folding asks, for a target backbone (the chain of repeating atoms that traces the fold), for a sequence that folds into it: \\[ a^{*} = \\arg\\max_{a}\\, p(a \\mid x). \\] This reads as 'pick the sequence most probable given the shape'. Here \\(a^{*}\\) is the chosen sequence (a list of \\(L\\) amino-acid types), \\(\\arg\\max_{a}\\) means 'the sequence \\(a\\) that makes the following value largest', \\(x\\) is the backbone coordinates (a list of \\(3N\\) numbers), and \\(p(a \\mid x)\\) is a learned probability, between 0 and 1, that sequence \\(a\\) fits shape \\(x\\). A minibinder is a small designed protein, usually under about 100 amino acids, built to stick to a chosen target. Designing one means choosing the shape, the contact surface and the sequence together.",
+      "The field has moved in steps. David Baker's group built Top7, the first computationally designed protein with a novel fold, in 2003 using Rosetta, protein-modeling software built on physics-based energy calculations. DeepMind's AlphaFold2 (Jumper et al., 2021), a neural network that predicts a protein's structure from its sequence, made structure prediction highly accurate. ProteinMPNN (Dauparas et al., 2022) learned inverse folding with a graph neural network, a network that passes information between connected points such as neighboring amino acids. RFdiffusion (Watson et al., 2023) used diffusion, which generates a structure by gradually removing noise, to create backbones. BindCraft (Pacesa et al., 2025) combined structure predictors into a pipeline for binder design. All of these are narrow systems built specifically for protein data."
+     ],
+     "status": "This rests on an OpenAI blog post and a preprint that has not been peer reviewed; the numbers come from OpenAI and its partner Onava, one report says no outside lab has checked them, and reports conflict on whether the full preprint was publicly available at the announcement.",
+     "recap": [
+      "OpenAI says GPT-6.2 designed the shapes of small protein binders using reasoning and code, and 35 of 322 tested designs showed binding.",
+      "The pipeline still leaned on specialist tools for sequences and filtering, and OpenAI's best internal model is weak at predicting structure from sequence.",
+      "Treat it as an early, unreviewed signal that a general model can help with design, not as proof of end-to-end drug design."
+     ],
+     "deeper": [
+      "Think of a string of beads that folds into a knot, where the knot decides what the string can do. A protein is such a string. It is a chain of amino acids, the small building blocks of proteins, and it folds into a three-dimensional shape that sets its function. Formally, a sequence \\(a \\in \\{1,\\dots,20\\}^L\\) maps to coordinates \\(x \\in \\mathbb{R}^{3N}\\). Here \\(a\\) is a list of \\(L\\) numbers, one per amino acid, each naming one of 20 types. The coordinates \\(x\\) are a list of \\(3N\\) numbers, three positions for each of \\(N\\) atoms. A chain of 60 amino acids has about \\(20^{60} \\approx 10^{78}\\) possible sequences, so searching blindly is hopeless.",
+      "Inverse folding runs folding backward. Given a target backbone, the repeating chain of atoms that traces the fold, it looks for a sequence that folds into it. A minibinder is a small designed protein, usually under about 100 amino acids, built to stick to a chosen target.",
+      "On November 24, 2026, OpenAI posted a preprint, a paper shared before peer review. It claims that a pre-release GPT-6.2 can do protein design. GPT stands for Generative Pre-trained Transformer, a family of general-purpose language models. Picture a sculptor who shapes clay with ordinary tools. The model was given the 3D structures of five targets, with the intended attachment site marked. It reasoned about where a small protein should press against the surface. It then wrote ordinary code that placed atoms to match.",
+      "A specialist model, SolubleMPNN, still supplied the amino-acid sequences. Specialist structure predictors and screening models then filtered candidates before synthesis. These were ESMFold2 (a structure predictor), Boltz-2 (a model of how molecules fit together) and OpenDDE. Onava, an artificial intelligence (AI) drug-discovery startup and OpenAI's partner, made 322 designs and tested them.",
+      "In a second experiment, the model got known minibinder structures with the sequences withheld, and it proposed new sequences. This is inverse folding done by prompting rather than retraining. The inverse-folding objective is",
+      "\\[ a^{*} = \\arg\\max_{a}\\, p(a \\mid x). \\]",
+      "This picks the sequence most probable for a given shape. The symbol \\(a^{*}\\) is the chosen sequence, a list of \\(L\\) amino-acid types. The operator \\(\\arg\\max_a\\) means \"the \\(a\\) that makes the following value largest\". The vector \\(x\\) is the backbone coordinates, \\(3N\\) numbers. The term \\(p(a \\mid x)\\) is a probability between 0 and 1 that sequence \\(a\\) fits shape \\(x\\).",
+      "The headline number is a hit rate, the share of tested designs that worked:",
+      "\\[ \\text{hit rate} = \\frac{k}{n}. \\]",
+      "This divides the successes by the attempts. Here \\(k = 35\\) is the count of designs showing binding, and \\(n = 322\\) is the count made and tested. Both are plain counts with no units.",
+      "Working the numbers: \\(35/322 \\approx 0.1087\\), or about 10.9%. Since \\(322/35 \\approx 9.2\\), that is roughly one design in nine. The sequence-redesign results are higher. Reports give \\(75/88 \\approx 0.85\\) for the target MDM2, a protein name. In a separate test that redesigned antibody loops, the parts that grip a target, \\(179/272 \\approx 0.66\\) of fragments kept binding. These ratios are not comparable with one another, because the tasks differ.",
+      "Earlier systems were narrow and trained on protein data. Rosetta, software built on physics-based energy calculations, produced Top7 in 2003. AlphaFold2 predicts structure from sequence. ProteinMPNN learned inverse folding with a graph neural network, which passes information between neighboring amino acids. RFdiffusion generated backbones by diffusion, which gradually removes noise. BindCraft chained structure predictors into a binder-design pipeline. The new claim differs because a general model does the geometric reasoning through code instead of a protein-specific network.",
+      "The limits matter. OpenAI says the results do not yet show end-to-end minibinder design without specialist help. The original RFdiffusion study reported higher hit rates, and such rates depend on filter strictness and on how binding is defined. Hits were also uneven across the five targets, though each had at least one.",
+      "Reports add that OpenAI's best internal model, not GPT-6.2 itself, scored a template modeling score (TM-score) near 0.38 at predicting structure from sequence. TM-score runs from 0 to 1 and measures how closely a predicted fold matches the true one. ESMFold2 scored roughly 0.93. Finally, binding is only a first step. It does not show that a protein is specific, stable or biologically active."
+     ],
+     "checked": true
+    }
+   ]
+  },
+  "primer": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "FlashAttention: Making Attention Fast by Moving Less Data",
+     "dek": "Attention became much faster not because of cheaper arithmetic, but because the computation was reorganized to stop shuttling a giant table of scores in and out of slow memory.",
+     "body": [
+      "The problem. Attention is the step where each token (one unit of input text) gathers information from the other tokens. It compares every token with every other token, so a sequence of N tokens produces an N-by-N table of scores. Take N = 8192. The table has 67,108,864 entries, about 134 megabytes in 16-bit numbers, per attention head (one independent copy of the attention computation), per layer (one stage of the network). A graphics processing unit (GPU), the chip with thousands of parallel arithmetic units that runs deep learning, has two kinds of memory. High-bandwidth memory (HBM) is large but comparatively slow. Static random-access memory (SRAM) is a tiny, very fast scratch space on the chip itself. Straightforward code writes the whole score table to HBM, reads it back for the softmax (the step that turns scores into weights), writes the result, and reads it again to multiply by the values. The arithmetic is cheap. The traffic is the bottleneck.",
+      "The intuition. Picture a cook with a small counter (SRAM) and a distant warehouse (HBM). The naive cook walks to the warehouse after every step to store half-finished work. The smart cook carries a tray of ingredients to the counter, performs every step, and returns only the finished dish. Being aware of input/output (IO), meaning data movement between memory levels, is the whole idea. The analogy breaks in one place. Softmax needs a sum over an entire row of scores, so the cook seems unable to finish before seeing every ingredient. The fix is that the cook keeps a running tally and corrects earlier work as new ingredients arrive.",
+      "The vocabulary. A token is one unit of input text. Each token gets a query vector (what it is looking for), a key vector (what it offers to others), and a value vector (the content it passes along). A score is the dot product of one query with one key, that is, multiply matching entries and add them up. Softmax turns a row of scores into weights that are positive and sum to 1, by exponentiating each score (computing e raised to that score) and dividing by the total. The output for a token is the weighted average of the value vectors. A kernel is a single program launched on the GPU. Tiling means cutting the big computation into blocks small enough to fit in SRAM. Fusing means doing all the steps inside one kernel, so intermediate results never touch HBM.",
+      "A worked example. Use one query q = (1, 0) and three tokens. The keys are (0,0), (1,0), (2,0) and the values are (1,0), (0,1), (1,1). I skip the usual scaling here to keep the numbers easy. The scores are 0, 1, 2. Their exponentials are 1, 2.72, 7.39, which sum to 11.11. The weights are 0.09, 0.24, 0.67, and the output is 0.09·(1,0) + 0.24·(0,1) + 0.67·(1,1) = (0.76, 0.91). Now do it in two tiles: tokens 1–2, then token 3. Tile one has maximum score 1. Subtracting it gives exponentials e^(−1) = 0.368 and 1.00, so the running sum is 1.368 (about 1.37) and the running output is 0.368·(1,0) + 1.00·(0,1) = (0.37, 1.00). Tile two has score 2, so the maximum rises from 1 to 2. Multiply the old tallies by e^(1−2) = 0.368. The sum becomes 0.368·1.368 + 1 = 1.503, about 1.50, and the output becomes 0.368·(0.368, 1.00) + 1·(1,1) = (1.14, 1.37). Dividing by 1.503 gives (0.76, 0.91), the same answer, with no full score row ever stored.",
+      "The general math. For one head, the standard definition is the following. \\[ O = \\mathrm{softmax}\\!\\left(\\frac{QK^{\\top}}{\\sqrt{d}}\\right)V \\] It scores every query against every key, turns scores into weights, and mixes the values. Here Q, K, V each have shape N×d (N tokens, d numbers per head), and O has shape N×d. K^T is the transpose of K, so QK^T is the N×N table of scores. The factor \\(\\sqrt{d}\\) keeps scores from growing with dimension. The tiled trick is the online softmax, applied to one query row as each block of keys arrives. The tallies start at m = −∞, l = 0, o = 0. \\[ m' = \\max(m, \\max_t s_t),\\quad l' = e^{m-m'}\\,l + \\sum_t e^{s_t-m'},\\quad o' = e^{m-m'}\\,o + \\sum_t e^{s_t-m'}\\,v_t \\] Each step rescales the old tallies to the new maximum, then adds the new block. The final output is o divided by l. Here m is the running maximum score (a scalar), l is the running sum of exponentials (a scalar), o is the running unnormalized output (a vector of length d), \\(s_t\\) is the score of key t in the current block, \\(v_t\\) is its value vector (length d), e is the base of the natural exponential, and primes mark updated values. In the example, m went 1 to 2, l went 1.37 to 1.50, and o went (0.37, 1.00) to (1.14, 1.37). The paper's data-movement bound is \\(\\Theta(N^2 d^2 / M)\\) HBM accesses, versus \\(\\Theta(Nd + N^2)\\) for the standard method. Here M is SRAM capacity in numbers, and Θ means 'grows proportionally to'. Intuitively, the bound says that a larger SRAM means fewer trips to HBM.",
+      "Common confusions. FlashAttention is exact, not an approximation, so the outputs match standard attention up to rounding. It does not reduce the number of floating-point operations (FLOPs), the count of additions and multiplications. Compute still grows with N², and only the extra memory drops to linear in N. For training, the backward pass (the step that computes how to adjust the model) does not store the score table either. It recomputes scores block by block, trading cheap arithmetic for scarce memory traffic. Another mistake is thinking this is a mathematical trick separate from hardware. The gain exists because of the memory hierarchy, so the best kernels are tuned to each GPU generation.",
+      "Where it shows up. FlashAttention-2 improved how work is split across the GPU's parallel units. FlashAttention-3 targets NVIDIA's Hopper generation of GPUs, overlapping data movement with arithmetic and supporting eight-bit floating-point numbers. Fused attention kernels of this kind are available in PyTorch's built-in attention function (PyTorch is a widely used deep learning library) and in inference servers such as vLLM (an open-source engine for serving language models). They help open-weight model families make long contexts affordable to train and serve. Newer attention variants tend to come with their own fused kernels because the same IO logic applies. The lesson carries beyond attention: on modern hardware, count memory trips before counting arithmetic."
+     ],
+     "why": "Long context windows and affordable training and serving depend on kernels that treat data movement, not arithmetic, as the cost to minimize.",
+     "terms": [
+      {
+       "term": "High-bandwidth memory (HBM)",
+       "def": "The large but comparatively slow main memory of a GPU, where model weights and activations normally live."
+      },
+      {
+       "term": "Static random-access memory (SRAM)",
+       "def": "The tiny, very fast on-chip scratch memory that kernels use to hold the block of data they are working on."
+      },
+      {
+       "term": "Kernel",
+       "def": "A single program launched on the GPU; fusing several steps into one kernel avoids writing intermediate results to slow memory."
+      },
+      {
+       "term": "Tiling",
+       "def": "Cutting a large computation into blocks small enough to fit in fast on-chip memory."
+      },
+      {
+       "term": "Online softmax",
+       "def": "A way to compute softmax in pieces by keeping a running maximum and running sum, and rescaling them when a larger score appears."
+      }
+     ],
+     "sources": [
+      {
+       "title": "FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness (Dao et al., 2022)",
+       "url": "https://arxiv.org/abs/2205.14135"
+      },
+      {
+       "title": "FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning (Dao, 2023)",
+       "url": "https://arxiv.org/abs/2307.08691"
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "Standard attention is slow mainly because it moves a huge N-by-N score table in and out of slow GPU memory.",
+      "FlashAttention computes the exact same result in small tiles held in fast on-chip memory, using a running maximum and running sum to fix the softmax as it goes.",
+      "It saves memory traffic, not arithmetic, so compute stays quadratic while extra memory becomes linear."
+     ],
+     "deeper": [
+      "Recall the pieces first. A token is one unit of input text. Attention is the step where each token gathers information from the others. Each token gets a query vector (what it is looking for), a key vector (what it offers), and a value vector (the content it passes along). A score is the dot product of a query with a key: multiply matching entries and add them up. Softmax turns a row of scores into positive weights that sum to 1, by computing e raised to each score and dividing by the total. A token's output is the weighted average of the value vectors. A head is one independent copy of this computation, and a layer is one stage of the network.",
+      "Now the problem. For N tokens, scores form an N-by-N table. At N = 8192 that is 67,108,864 entries, about 134 megabytes in 16-bit numbers, per head per layer. A graphics processing unit (GPU) is a chip with thousands of parallel arithmetic units. It has two kinds of memory. High-bandwidth memory (HBM) is large but comparatively slow. Static random-access memory (SRAM) is a tiny, very fast scratch space on the chip. Straightforward code writes the score table to HBM, reads it back for softmax, writes the weights, and reads them again to multiply by the values. The arithmetic is cheap. The traffic is the bottleneck.",
+      "Picture a cook with a small counter (SRAM) and a distant warehouse (HBM). The naive cook walks to the warehouse after every step. FlashAttention's cook carries a tray of ingredients to the counter, does every step, and returns only the finished dish. Attention that is aware of input/output (IO), meaning data movement between memory levels, is the whole idea. Two techniques make it work. Tiling cuts the computation into blocks small enough for SRAM. Fusing does all steps inside one kernel, a single program launched on the GPU, so intermediate results never touch HBM.",
+      "The analogy strains at softmax. It needs a sum over a whole row, so the cook seems unable to finish early. The fix is a running tally that is corrected as new ingredients arrive.",
+      "The standard definition, for one head, is:",
+      "\\[ O = \\mathrm{softmax}\\!\\left(\\frac{QK^{\\top}}{\\sqrt{d}}\\right)V \\]",
+      "This scores every query against every key, turns scores into weights, and mixes the values. Q, K, and V each have shape N×d (N tokens, d numbers per head), and O has shape N×d. K^T is the transpose of K, so QK^T is the N×N score table. The factor \\(\\sqrt{d}\\) keeps scores from growing with dimension.",
+      "The tiled version is the online softmax. For one query row, keep a running maximum m, a running sum l, and a running output o, starting at m = −∞, l = 0, o = 0. For each block of keys:",
+      "\\[ m' = \\max(m, \\max_t s_t),\\quad l' = e^{m-m'}\\,l + \\sum_t e^{s_t-m'},\\quad o' = e^{m-m'}\\,o + \\sum_t e^{s_t-m'}\\,v_t \\]",
+      "Each step rescales the old tallies to the new maximum, then adds the new block. At the end, the output is o divided by l. Here m is the running maximum score (a scalar), l is the running sum of exponentials (a scalar), and o is the running unnormalized output (a vector of length d). The index t runs over keys in the current block, \\(s_t\\) is the score of key t, \\(v_t\\) is its value vector (length d), e is the base of the natural exponential, and primes mark updated values. Subtracting the maximum keeps exponentials from overflowing.",
+      "Now a numeric check, skipping the usual scaling. Take query q = (1, 0), keys (0,0), (1,0), (2,0), and values (1,0), (0,1), (1,1). The scores are 0, 1, 2. Their exponentials are 1, 2.72, 7.39, summing to 11.11. The weights are 0.09, 0.24, 0.67, so the output is (0.76, 0.91).",
+      "Now use two tiles. Tile one holds tokens 1–2 with maximum 1. The exponentials are e^(−1) = 0.368 and 1.00, so l = 1.368 and o = (0.37, 1.00). Tile two holds token 3 with score 2, so the maximum rises from 1 to 2. Scale the old tallies by e^(1−2) = 0.368. Then l = 0.368·1.368 + 1 = 1.503, and o = 0.368·(0.368, 1.00) + (1, 1) = (1.14, 1.37). Dividing by 1.503 gives (0.76, 0.91). The answer is identical, and no full score row was stored.",
+      "The paper's data-movement bound is \\(\\Theta(N^2 d^2 / M)\\) HBM accesses, versus \\(\\Theta(Nd + N^2)\\) for the standard method. Here M is SRAM capacity in numbers, and Θ means \"grows proportionally to\". A larger SRAM means fewer trips to HBM.",
+      "Compared with earlier approaches, this is exact. Approximate attention methods change the outputs to cut arithmetic. FlashAttention matches standard attention up to rounding. It does not reduce floating-point operations (FLOPs), the count of additions and multiplications. Compute still grows with N², and only the extra memory drops to linear in N. In training, the backward pass (the step that computes how to adjust the model) also skips the score table. It recomputes scores block by block, trading cheap arithmetic for scarce memory traffic.",
+      "The limitations follow from the hardware. The gain exists because of the memory hierarchy, so the best kernels are tuned to each GPU generation. FlashAttention-2 improved how work is split across parallel units. FlashAttention-3 targets NVIDIA's Hopper generation, overlapping data movement with arithmetic and supporting eight-bit floating-point numbers. Fused kernels like these appear in PyTorch's built-in attention function (PyTorch is a widely used deep learning library) and in vLLM (an open-source engine for serving language models). An open question is how quickly new attention variants get their own tuned kernels, since the same IO logic applies. The lesson is to count memory trips before counting arithmetic."
+     ]
+    }
+   ]
+  },
+  "throwback": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "Let specialists compete: the 1991 idea of splitting one network into many, and its return",
+     "dek": "A 1991 paper proposed training several small networks plus a referee that decides who handles each input, and in 2017 that idea made very large networks affordable to run.",
+     "body": [
+      "In the late 1980s, a single neural network trained on a task with distinct regimes had a problem. Think of a robot arm whose controller must handle both free motion and contact with a surface. One set of weights has to serve both, and the gradient (the direction in which each weight should change to reduce error) from one regime keeps undoing progress on the other. This interference makes learning slow and the result mushy. Jacobs, Jordan, Nowlan, and Hinton (1991) asked whether the network could split the problem itself.",
+      "Picture a hospital front desk. Patients arrive with different complaints, and a receptionist sends each one to a specialist. No single doctor needs to know everything, and each doctor sees only the cases they are good at. The 1991 paper, Adaptive mixtures of local experts, builds exactly this. An expert is a small network that handles one region of the input space. A gating network is a separate small network that looks at the input and decides how much to trust each expert. The surprise is that nobody assigns the regions. The split emerges from training.",
+      "Now the mechanism. Say there are n experts. The gate computes one raw score per expert and turns the scores into probabilities with a softmax, a function that exponentiates each score and divides by the total so the results are positive and sum to one. The layer's output is the probability-weighted blend of the expert outputs:",
+      "\\[ y(x)=\\sum_{i=1}^{n} g_i(x)\\,y_i(x), \\qquad g_i(x)=\\frac{e^{s_i(x)}}{\\sum_{j=1}^{n} e^{s_j(x)}} \\]",
+      "This says the final answer is an average of the experts' answers, weighted by how much the gate favors each one. Here x is the input vector, y(x) is the layer's blended output, y_i(x) is expert i's output, s_i(x) is the gate's raw score for expert i (a single number), g_i(x) is the resulting weight between 0 and 1, i and j are indices that run over the experts, and n is the number of experts. A subtle point: if you simply train the blended output y against the target, the experts learn to cooperate and patch each other's errors, so none specializes. Jacobs et al. instead scored each expert separately against the target d:",
+      "\\[ E=-\\log\\sum_{i=1}^{n} g_i(x)\\,\\exp\\!\\left(-\\tfrac12\\lVert d-y_i(x)\\rVert^2\\right) \\]",
+      "This is the negative log-likelihood of a mixture of Gaussians (bell-curve-shaped probability models centered on each expert's output), which rewards the gate for putting weight on whichever expert is already close to the target, so experts compete. Here E is the loss (the number training tries to shrink) for one training case, d is the target vector, y_i(x) and g_i(x) are as above, exp is the exponential function, and the double bars mean Euclidean distance, so the squared term is each expert's own squared error. Each expert's share of the learning signal is its responsibility, its term in the sum divided by the whole sum.",
+      "A small example shows this. Take two experts with gate weights (0.8, 0.2), a target d = 1, and expert outputs 0.9 and 0.0. Expert 1's squared error is 0.01, so its term is 0.8 × e^(−0.005) ≈ 0.796. Expert 2's squared error is 1, so its term is 0.2 × e^(−0.5) ≈ 0.121. The sum is about 0.917. Expert 1's responsibility is 0.796 / 0.917 ≈ 0.87, and expert 2's is about 0.13. So expert 1 receives most of the training signal and the gate is pushed to favor it further. Specialization snowballs.",
+      "The next landmark for this idea came when Shazeer and colleagues (2017) published Outrageously large neural networks: The sparsely-gated mixture-of-experts layer. The obstacle was cost. In the 1991 form every expert runs on every input, so adding experts adds compute. Their fix was sparsity: keep only the k highest gate scores, set the rest to negative infinity before the softmax so those weights become exactly zero, and run only those k experts. They added noise to the scores and extra loss terms to balance load, because otherwise the gate tends to favor a few experts, which then train faster and win even more often. The payoff is that parameters can grow with the number of experts while compute per input grows only with k.",
+      "This is the form that lives on today. In many large language models (networks trained to predict text), the feed-forward block inside each transformer layer (the per-token network that follows the attention step in the standard language-model architecture) is replaced by a bank of experts, and a learned router (the gate) sends each token, a small chunk of text, to a few of them. Load balancing, routing stability, and spreading experts across many devices are now central engineering problems. All of them descend from a 1991 receptionist deciding who sees which patient."
+     ],
+     "why": "Sparse expert layers let modern language models hold far more knowledge than they spend compute on for any single token.",
+     "terms": [
+      {
+       "term": "Mixture of experts (MoE)",
+       "def": "A layer made of many smaller networks (experts) plus a gate that decides which experts process each input and how their outputs are combined."
+      },
+      {
+       "term": "Gating network",
+       "def": "A small network that turns an input into one weight per expert, usually with a softmax, so the weights are positive and sum to one."
+      },
+      {
+       "term": "Sparse gating",
+       "def": "Using only the k experts with the highest gate scores for each input, so the others are skipped and cost no compute."
+      }
+     ],
+     "sources": [
+      {
+       "title": "Jacobs, R. A., Jordan, M. I., Nowlan, S. J., & Hinton, G. E. (1991). Adaptive mixtures of local experts. Neural Computation.",
+       "url": ""
+      },
+      {
+       "title": "Shazeer, N., et al. (2017). Outrageously large neural networks: The sparsely-gated mixture-of-experts layer. ICLR 2017.",
+       "url": "https://arxiv.org/abs/1701.06538"
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "A mixture of experts blends several small networks using a gating network that learns which expert to trust for each input.",
+      "Scoring each expert separately against the target makes experts compete and specialize instead of cooperating.",
+      "Keeping only the top few gate scores lets total parameters grow while the compute per input stays small."
+     ],
+     "deeper": [
+      "Start with the prerequisites. A neural network is a stack of adjustable weights. Training measures an error, called the loss, and computes the gradient, the direction in which each weight should change to reduce that loss. Now suppose one network must handle two regimes, such as a robot arm moving freely and then pressing on a surface. The gradients from the two regimes pull the same weights in conflicting directions. Learning slows and the result is a muddy compromise.",
+      "The 1991 paper by Jacobs, Jordan, Nowlan, and Hinton, Adaptive mixtures of local experts, proposes a different structure. Think of a hospital front desk. A receptionist looks at each arriving patient and sends them to a specialist, and each specialist sees only the cases they handle well. In the network, an expert is a small network that handles one region of the input space, meaning the set of possible input vectors. A gating network is a separate small network that looks at the input and decides how much to trust each expert. Nobody assigns the regions. They emerge during training.",
+      "Mechanically, the gate outputs one raw score per expert. A softmax converts the scores into positive weights that sum to one. The layer returns the weighted blend of the expert outputs:",
+      "\\[ y(x)=\\sum_{i=1}^{n} g_i(x)\\,y_i(x), \\qquad g_i(x)=\\frac{e^{s_i(x)}}{\\sum_{j=1}^{n} e^{s_j(x)}} \\]",
+      "This says the answer is an average of the experts' answers, weighted by how much the gate favors each one. Here x is the input vector, y(x) is the blended output, y_i(x) is expert i's output, s_i(x) is the gate's raw score for expert i (one number), g_i(x) is its weight between 0 and 1, i and j index the experts, and n is the number of experts.",
+      "Training the blend directly against the target has a flaw. The experts learn to cooperate and patch each other's errors, so none specializes. The paper instead scores each expert on its own against the target d:",
+      "\\[ E=-\\log\\sum_{i=1}^{n} g_i(x)\\,\\exp\\!\\left(-\\tfrac12\\lVert d-y_i(x)\\rVert^2\\right) \\]",
+      "This is the negative log-likelihood of a mixture of Gaussians, which are bell-curve probability models centered on each expert's output. It rewards the gate for putting weight on experts that are already close to the target, so the experts compete. E is the loss for one training case. d is the target vector. The double bars denote Euclidean distance, so the squared term is expert i's own squared error. The exponential function is written exp. The other symbols are as above.",
+      "Each expert's share of the learning signal is its responsibility. This is its term in the sum divided by the whole sum.",
+      "Here is a numeric example. Take two experts with gate weights (0.8, 0.2), target d = 1, and expert outputs 0.9 and 0.0. Expert 1 has squared error 0.01, so its term is 0.8 × e^(−0.005) ≈ 0.796. Expert 2 has squared error 1, so its term is 0.2 × e^(−0.5) ≈ 0.121. The sum is about 0.917. Expert 1's responsibility is 0.796 / 0.917 ≈ 0.87, and expert 2's is about 0.13. Expert 1 receives most of the training signal, and the gate is pushed to favor it more. Specialization snowballs.",
+      "Compare this with the earlier approaches. A single network shares all its weights across regimes, so the regimes interfere. A blended-output loss gives each expert a gradient that depends on the others, so they collaborate rather than specialize. The competitive loss gives each expert a gradient weighted by its own responsibility, so each trains mostly on the cases it already handles well.",
+      "The cost was that every expert ran on every input. Shazeer and colleagues (2017), in Outrageously large neural networks: The sparsely-gated mixture-of-experts layer, made the idea scalable. Their layer is a mixture of experts (MoE), a layer that sends each input to a few of many smaller networks. They keep only the k highest gate scores and set the rest to negative infinity before the softmax. Since e raised to negative infinity is zero, those weights become exactly zero, and those experts never run. Parameters can then grow with the number of experts while compute per input grows only with k.",
+      "This form is now common in large language models, which are networks trained to predict text. The feed-forward block is the per-token network that follows attention inside each transformer layer. In these models it is replaced by a bank of experts, and a learned router (the gate) sends each token, a small chunk of text, to a few of them.",
+      "The open problems are practical. The gate tends to favor a few experts, which then train faster and win more often. Shazeer and colleagues added noise to the scores and extra loss terms to balance the load. Routing stability and spreading experts across many devices remain central engineering problems."
+     ],
+     "era": "1991, revived 2017"
+    }
+   ]
+  }
+ }
+}
