@@ -1,0 +1,196 @@
+{
+ "date": "2026-11-26",
+ "created": "2026-11-26T14:43:52.889451-05:00",
+ "primerIndex": 5,
+ "throwbackIndex": 5,
+ "sections": {
+  "architectures": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "A four-token window of learned local attention replaces a fixed filter inside a fast-memory language model layer",
+     "dek": "A new preprint swaps one small fixed filter in a memory-based sequence layer for a tiny attention window that adapts to content, and reports better long-context retrieval.",
+     "body": [
+      "<cite index=\"30-3\">A preprint posted this week, 'One Token, Many Lessons', proposes Sliding-Window Gated DeltaNet (SWGDN). It replaces the short convolutions in delta-rule linear attention with sliding-window attention.</cite> <cite index=\"30-5\">The authors apply the idea to two delta-rule variants, Gated DeltaNet-2 and Kimi Delta Attention, and report gains over the original baselines across multiple benchmarks.</cite>",
+      "Here is the background. Standard attention compares every token with every earlier token, so its cost grows with the square of the sequence length. Linear attention avoids this by keeping a fixed-size memory matrix and updating it one token at a time. The delta rule is a particular update: before writing a new key-value pair, the layer checks what the memory already predicts for that key and corrects only the error. Think of a notebook where you erase the old entry for a name before writing the new one. Gated DeltaNet, which this paper builds on, adds a forgetting gate. <cite index=\"21-8\">Before the recurrence runs, a short causal one-dimensional convolution is applied jointly to the query, key and value vectors.</cite> A convolution here means a small sliding filter whose weights are the same for every input.",
+      "The new idea is to make that local step depend on content. Picture a reader who blends the last four words with fixed proportions, versus one who gives more weight to whichever word matters. SWGDN does the second. <cite index=\"28-7\">Pseudo-queries compute attention weights over keys within a local window, so the local aggregation adapts to the input.</cite> <cite index=\"19-9,19-10\">The window size is 4, and only complete windows are considered.</cite> Take four scalar values 1, 2, 3 and 4 with weights 0.1, 0.1, 0.2 and 0.6, which sum to 1. The blend is 0.1 + 0.2 + 0.6 + 2.4 = 3.3. A fixed filter would use the same weights for every input. In simplified form, \\[ \\tilde{x}_t = \\sum_{i=t-3}^{t} a_i\\, x_i \\] mixes the last four projected vectors into one. Here \\(x_i\\) is the projected vector at position \\(i\\), \\(a_i\\) is a non-negative weight that comes from the pseudo-query and sums to 1 over the window, and \\(\\tilde{x}_t\\) is the mixed vector passed on at position \\(t\\). The memory update itself is unchanged: \\[ S_t = \\alpha_t\\,(I - \\beta_t k_t k_t^{\\top})\\,S_{t-1} + \\beta_t k_t v_t^{\\top}. \\] This update first erases the part of the memory along the current key, then writes the new association. \\(S_t\\) is the memory matrix of shape \\(d_k \\times d_v\\), \\(\\alpha_t\\) is a scalar forgetting gate between 0 and 1, \\(\\beta_t\\) is a scalar write strength, \\(k_t\\) is the key vector of length \\(d_k\\), \\(v_t\\) is the value vector of length \\(d_v\\), and \\(I\\) is the \\(d_k \\times d_k\\) identity matrix. <cite index=\"30-4\">Because the update equations and chunkwise parallel algorithms stay the same, the change can drop into any delta-rule linear attention design.</cite>",
+      "<cite index=\"29-1\">All SWGDN variants outperform their respective baselines on average across 14 settings of RULER, a long-context retrieval benchmark.</cite> The paper also inspects what the window learns. <cite index=\"28-12\">In the value branch, it gives more of its normalized weight to the preceding token than a dynamic convolution does.</cite> The caveats are significant. This is a two-day-old preprint that has not been peer reviewed. I could not confirm the model sizes, the margins of improvement, or any comparison with full-attention models from the text I retrieved. The window of 4 is tiny, so the evidence is about better write pairs for the memory, not about longer reach."
+     ],
+     "why": "It suggests that the way key-value pairs are built before a fixed-size memory update is a cheap, underexplored lever for improving linear-attention and hybrid models.",
+     "terms": [
+      {
+       "term": "Sliding-Window Gated DeltaNet (SWGDN)",
+       "def": "A layer that uses small content-dependent attention windows instead of short convolutions to prepare queries, keys and values for a delta-rule memory."
+      },
+      {
+       "term": "Linear attention",
+       "def": "An attention substitute that keeps a fixed-size memory updated token by token, so cost grows linearly with sequence length."
+      },
+      {
+       "term": "Delta rule",
+       "def": "A memory update that subtracts what the memory already predicts for a key and writes only the correction."
+      },
+      {
+       "term": "RULER",
+       "def": "A benchmark that tests long-context retrieval, including needle-in-a-haystack tasks."
+      },
+      {
+       "term": "Pseudo-query",
+       "def": "A learned vector, one per head and branch, that scores the keys in a local window to set the mixing weights."
+      }
+     ],
+     "sources": [
+      {
+       "title": "One Token, Many Lessons: Sliding-Window Attention within Gated Delta Networks (arXiv abstract)",
+       "url": "https://arxiv.org/abs/2611.33257"
+      },
+      {
+       "title": "One Token, Many Lessons (arXiv full text, HTML)",
+       "url": "https://arxiv.org/html/2611.33257"
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "Delta-rule linear attention keeps a fixed-size memory and usually builds each key, query and value with a short fixed convolution.",
+      "Sliding-Window Gated DeltaNet swaps that convolution for a four-token attention window whose weights depend on content, leaving the memory update untouched.",
+      "It beats its baselines on average across 14 RULER retrieval settings, but the margins and model scale are unconfirmed and the work is not yet peer reviewed."
+     ],
+     "deeper": []
+    }
+   ]
+  },
+  "training": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "When every attempt fails, this method repairs one bad moment instead of replaying the whole task",
+     "dek": "A new training method, SPLICE, rescues learning signal from long agent tasks where every sampled attempt scores zero. It does this by testing short fixes at one point in a failed attempt.",
+     "body": [
+      "<cite index=\"35-2\">On November 25, 2026, Haowen Hou, Yicheng Liu, Zhen Huang and Jiaqi Wang posted SPLICE.</cite> <cite index=\"29-1\">It targets a failure of group-based reinforcement learning with verifiable rewards on long agent tasks: every sampled attempt gets zero reward.</cite> Reinforcement learning (RL) trains a model by trial and reward. A verifiable reward comes from an automatic checker, such as a test suite that passes or fails.",
+      "Recall how Group Relative Policy Optimization (GRPO), an RL algorithm, learns. For one task, it samples a group of attempts, called rollouts, which are full runs from start to finish. It scores each attempt and compares it with the group average. \\[ A_i = \\frac{r_i - \\bar r}{\\sigma + \\epsilon} \\] This gives attempts that beat their peers a positive push and attempts that lag a negative one. Here \\(A_i\\) is the advantage of attempt \\(i\\), \\(r_i\\) is its reward, \\(\\bar r\\) is the group's mean reward, \\(\\sigma\\) is the group's standard deviation, and \\(\\epsilon\\) is a tiny constant that avoids dividing by zero. Take four attempts with rewards 1, 0, 0, 0. The mean is 0.25 and the standard deviation is about 0.433. The winner gets an advantage of about +1.73 and each loser about -0.58. If all four score 0, every advantage is 0, so there is no gradient and nothing to learn.",
+      "SPLICE works like a coach who pauses the tape at the moment a play went wrong. The coach does not replay the whole game. <cite index=\"29-4\">For each all-fail group, a proposal model picks a splice point in one of the learner's own failed trajectories and generates several bounded options from there.</cite> <cite index=\"29-5\">Each option's value is estimated from repeated continuations by the current policy. Positive estimates become a return-weighted local target, and the policy is fitted to those options.</cite> In essence, an option's value is an average: \\[ \\hat V(o) = \\frac{1}{m}\\sum_{k=1}^{m} r_k \\] Here \\(o\\) is the option, \\(m\\) is the number of continuations, and \\(r_k\\) is the 0-or-1 reward of continuation \\(k\\). If one of three continuations succeeds, the estimate is 1/3. <cite index=\"33-8\">One summary describes three options, with three continuations per incomplete option.</cite> The key point is that the stronger proposal model only suggests. The learner itself judges whether a suggestion is usable.",
+      "<cite index=\"29-6\">The authors tested two policy families on two long-horizon tasks: software engineering with SWE-bench Verified, a set of real GitHub bug fixes, and deep research with BrowseComp-Plus, a web-research benchmark.</cite> <cite index=\"35-4,35-5\">SPLICE beat GRPO and full-trajectory guidance baselines in all four settings, by 2.8 to 9.8 percentage points. On initially failed software tasks it raised GRPO's graduation rate by 10.8 points.</cite> <cite index=\"35-6\">The authors also report less costly proposal-model computation.</cite> Caveats: this is a fresh preprint, and I found no independent replication. The method still needs a proposal model. It is also unclear how well it scales to larger policies or tasks with rarer successes."
+     ],
+     "why": "Long coding and research tasks often fail completely early in training, so a cheap way to turn all-fail groups into learning signal could make agent RL far more sample-efficient.",
+     "terms": [
+      {
+       "term": "Group Relative Policy Optimization (GRPO)",
+       "def": "An RL algorithm that samples several attempts per task and scores each relative to the group average, with no separate value network."
+      },
+      {
+       "term": "Reinforcement learning (RL)",
+       "def": "Training a model by letting it act, receive rewards, and shift toward behavior that earns more reward."
+      },
+      {
+       "term": "Rollout",
+       "def": "One complete attempt by the model at a task, from the first step to the final outcome."
+      },
+      {
+       "term": "SWE-bench Verified",
+       "def": "A benchmark of real software bug reports where an agent must produce a patch that passes tests."
+      },
+      {
+       "term": "BrowseComp-Plus",
+       "def": "A benchmark of web-research questions that an agent must answer by searching and reading documents."
+      }
+     ],
+     "sources": [
+      {
+       "title": "When Every Rollout Fails: Splicing Learner-Conditioned Options into Long-Horizon Agent RL (arXiv)",
+       "url": "https://arxiv.org/abs/2611.34777"
+      },
+      {
+       "title": "SPLICE paper summary (Papers with Code mirror)",
+       "url": "https://paperswithcode.co/paper/2611.34777"
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "Group-relative RL learns nothing when every attempt in a group scores zero, because all the advantages are zero.",
+      "SPLICE picks one point in a failed attempt, proposes a few short fixes, and lets the current model test each by continuing on its own.",
+      "It beat GRPO by 2.8 to 9.8 points across four settings, but the evidence is one preprint so far."
+     ],
+     "deeper": []
+    }
+   ]
+  },
+  "theory": {
+   "status": "done",
+   "articles": [
+    {
+     "headline": "Which learned features will survive a retrain? Crowded neighbors are the best clue",
+     "dek": "A new paper shows that you can often guess from one training run which dictionary features a feature-finding tool would find again if trained from scratch.",
+     "body": [
+      "Denis Federico Lim, Naveen Dasari, George Flint and Kevin Zhu posted a paper on feature stability in sparse autoencoders. It appeared in the arXiv machine-learning listings on November 26, 2026, and was accepted at the NeurReps workshop at the Conference on Neural Information Processing Systems (NeurIPS) 2026. <cite index=\"31-1\">They study cross-seed feature stability across different training-token budgets and find it highly predictable from six cheap statistics taken from a single training run.</cite> <cite index=\"34-4\">The strongest single predictor is neighbor crowding, a geometric property of the dictionary.</cite>",
+      "Recall that a sparse autoencoder (SAE) is a small network trained to rebuild a language model's internal activations from a wide, mostly-zero code. Each code slot is a 'feature' with a decoder vector, which is the direction in activation space that the feature writes back. A TopK SAE keeps only the k largest code entries per input and zeroes the rest. A seed is the random number that fixes the initial weights and data order. The worry is that a different seed can give a different dictionary. A feature found only by one seed may be an accident, not a real property of the model.",
+      "Picture a map of stars. A star with many neighbors is easy to match between two photographs. A lonely star is easy to lose. The paper tests whether features behave like this. Each decoder vector is normalized to length 1, so it is a point on a sphere. Roughly, a feature counts as stable if some feature from another seed points almost the same way. The matching score is \\[ s_i = \\max_j \\frac{d_i^\\top d'_j}{\\lVert d_i \\rVert \\, \\lVert d'_j \\rVert} \\] This score measures how closely feature i is echoed by the best match in the other run. Here \\(d_i\\) is the decoder vector of feature i in one run, \\(d'_j\\) is the decoder vector of feature j in the other run, and each has one entry per model dimension. The superscript T means transpose, which turns the dot product into one number. The double bars are vector length. If \\(d_i=(1,0)\\) and \\(d'_j=(0.8,0.6)\\), then the score is 0.8, because the second vector already has length 1. A feature is called stable when its score clears a threshold θ. Neighbor crowding measures how densely other decoder vectors surround a feature on the sphere.",
+      "Crowding comes out ahead of the other statistics. <cite index=\"29-5\">On its own it recovers the stability label at an area under the receiver operating characteristic curve (AUROC) of 0.816, ahead of reconstruction contribution (0.802), mean activation (0.780) and activation frequency (0.610).</cite> AUROC is the chance that a random stable feature is ranked above a random unstable one, so 0.5 is a coin flip. <cite index=\"29-6\">Within GPT-2, crowding again leads, at 0.698 against 0.637 for mean activation.</cite> <cite index=\"30-13\">Stability also falls as k rises in TopK SAEs.</cite> There are caveats. Crowding and the stability label both come from decoder cosine similarity. A crowded feature might clear the threshold by matching a nearby direction instead of its true counterpart. The authors run a control that finds chance-level prediction. The paper is a short workshop paper, and it shows prediction, not a cause. It also does not show that stable features are the more useful ones."
+     ],
+     "why": "If one run can flag which features are likely real, interpretability teams can screen dictionaries cheaply instead of retraining many times.",
+     "terms": [
+      {
+       "term": "Sparse autoencoder (SAE)",
+       "def": "A network trained to rebuild a model's internal activations from a wide code in which most entries are zero, so each active entry can be read as a feature."
+      },
+      {
+       "term": "TopK SAE",
+       "def": "A sparse autoencoder that keeps only the k largest code entries for each input and sets the rest to zero."
+      },
+      {
+       "term": "Area under the receiver operating characteristic curve (AUROC)",
+       "def": "A score for how well a predictor ranks positives above negatives, where 0.5 is chance and 1.0 is perfect."
+      },
+      {
+       "term": "Conference on Neural Information Processing Systems (NeurIPS)",
+       "def": "A major machine-learning research conference, which hosted the workshop that accepted this paper."
+      },
+      {
+       "term": "Decoder vector",
+       "def": "The direction in activation space that a feature writes back when the autoencoder rebuilds an activation."
+      }
+     ],
+     "sources": [
+      {
+       "title": "Neighbor Crowding Predicts Feature Stability in Sparse Autoencoders (arXiv abstract)",
+       "url": "https://arxiv.org/abs/2611.33182"
+      },
+      {
+       "title": "Neighbor Crowding Predicts Feature Stability in Sparse Autoencoders (arXiv full text)",
+       "url": "https://arxiv.org/html/2611.33182"
+      }
+     ],
+     "background": [],
+     "status": "",
+     "recap": [
+      "Features from sparse autoencoders can change between random seeds, and a feature in a crowded region of the sphere is more likely to be found again.",
+      "In this paper, neighbor crowding predicted stability better than any of five other single statistics, with an AUROC of 0.816 in the main evaluation.",
+      "The result is correlational and was tested on TopK SAEs, so it does not yet show that stable features matter more for interpretation."
+     ],
+     "deeper": []
+    }
+   ]
+  },
+  "practice": {
+   "status": "error",
+   "error": "This section wasn't filed today (BadRequestError)."
+  },
+  "robotics": {
+   "status": "error",
+   "error": "This section wasn't filed today (BadRequestError)."
+  },
+  "discoveries": {
+   "status": "error",
+   "error": "This section wasn't filed today (BadRequestError)."
+  },
+  "primer": {
+   "status": "error",
+   "error": "Today's primer wasn't filed."
+  },
+  "throwback": {
+   "status": "error",
+   "error": "Today's throwback wasn't filed."
+  }
+ }
+}
